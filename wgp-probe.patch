@@ -1,0 +1,22 @@
+diff --git a/tinygrad/runtime/ops_amd.py b/tinygrad/runtime/ops_amd.py
+index 19b7fdcf0..6552a2897 100644
+--- a/tinygrad/runtime/ops_amd.py
++++ b/tinygrad/runtime/ops_amd.py
+@@ -260,7 +260,7 @@ class AMDComputeQueue(HWQueue):
+       for xcc in range(self.dev.xccs):
+         with self.pred_exec(xcc_mask=1 << xcc):
+           for i in range(8 if self.target[0] != 9 else 4):
+-            if SQTT_LIMIT_SE > 1: mask = 1 if SQTT_ITRACE_SE_MASK.value & (1 << i) else 0 # only run unmasked shader engines
++            if SQTT_LIMIT_SE > 1: mask = (1 << (2 * int(__import__("os").environ.get("SQTT_WGP_PROBE", "0")))) if SQTT_ITRACE_SE_MASK.value & (1 << i) else 0 # only run unmasked shader engines
+             else:
+               sa_mask = (1 << (self.dev.iface.props['cu_per_simd_array'] // 2)) - 1
+               cu_mask = (1 << (cu_per_se + (1 if i == 0 else 0))) - 1
+@@ -311,7 +311,7 @@ class AMDComputeQueue(HWQueue):
+         # CUs you want to by disabling other CUs via bits in regCOMPUTE_STATIC_THREAD_MGMT_SE<x> and trace even kernels that only have one wavefront.
+         # Use SQTT_SIMD_SEL to select which SIMD to trace (0-3). Memory ops show different InstOp values (0x2x vs 0x5x) based on SIMD.
+         cs_wtype = (1 << 6) if self.target >= (12,0,0) else self.soc.SQ_TT_WTYPE_INCLUDE_CS_BIT
+-        self.wreg(self.gc.regSQ_THREAD_TRACE_MASK, wtype_include=cs_wtype, simd_sel=SQTT_SIMD_SEL.value, wgp_sel=0, sa_sel=0)
++        self.wreg(self.gc.regSQ_THREAD_TRACE_MASK, wtype_include=cs_wtype, simd_sel=SQTT_SIMD_SEL.value, wgp_sel=int(__import__("os").environ.get("SQTT_WGP_PROBE", "0")), sa_sel=0)
+         reg_include = self.soc.SQ_TT_TOKEN_MASK_SQDEC_BIT | self.soc.SQ_TT_TOKEN_MASK_SHDEC_BIT | self.soc.SQ_TT_TOKEN_MASK_GFXUDEC_BIT | \
+                       self.soc.SQ_TT_TOKEN_MASK_COMP_BIT | self.soc.SQ_TT_TOKEN_MASK_CONTEXT_BIT
+         token_exclude = SQTT_TOKEN_EXCLUDE.value | ((1 << self.soc.SQ_TT_TOKEN_EXCLUDE_PERF_SHIFT) if self.target < (12,0,0) else 0)

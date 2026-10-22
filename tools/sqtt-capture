@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+# sqtt-capture: record a real SQTT trace of a tinygrad kernel on the 7900 XTX through KFD (amdgpu stays bound).
+# Usage: sqtt-capture NAME|PROBE.py [OUTDIR]   NAME = a preset from tinygrad extra/sqtt/examples/generate_examples.py
+#        (empty, plus, gemm, sync, handwritten). Writes OUTDIR/profile_NAME.pkl with only the
+#        ProfilePMCEvent/ProfileSQTTEvent/ProfileProgramEvent records, the shape sqtt-timing-check reads.
+# Needs the perf level at profile_standard first (tinygrad would sudo it itself, which cannot prompt in a batch job).
+# TINYGRAD = the tinygrad checkout (default $HOME/tinygrad). Runs under gpu-wait when it is installed, directly otherwise.
+# Never sets AM_RESET: that path is tinygrad's own driver and takes the GPU from the desktop.
+set -euo pipefail
+name=${1:?usage: sqtt-capture NAME [OUTDIR]}
+TG=${TINYGRAD:-$HOME/tinygrad}
+out=${2:-$TG/.work/sqtt}
+card=""; for d in /sys/class/drm/card[0-9]*/device; do [[ $(cat "$d/device" 2>/dev/null) == 0x744c ]] && { card=$d; break; }; done
+[[ -n $card ]] || { echo "FAIL device: no 7900 XTX (gfx1100, 0x744c) found"; exit 1; }
+lvl=$card/power_dpm_force_performance_level
+cur=$(cat "$lvl")
+[[ $cur == profile_standard ]] || { echo "FAIL power: perf level is '$cur', run: ! echo profile_standard | sudo tee $lvl"; exit 1; }
+if [[ $name == *.py ]]; then  # a probe script (path relative to the tinygrad checkout) instead of a preset
+  [[ $name == /* ]] || name=$TG/$name   # absolute, or relative to the tinygrad checkout
+  [[ -f $name ]] || { echo "FAIL preset: no script $name"; exit 1; }
+  cmd=$name; name=$(basename "$name" .py)
+else
+cmd=$(cd "$TG" && python3 -c "
+import sys; sys.argv=['x']
+from extra.sqtt.examples.generate_examples import EXAMPLES
+print(EXAMPLES.get('$name', ''))")
+[[ -n $cmd ]] || { echo "FAIL preset: unknown NAME '$name'"; exit 1; }
+fi
+prof=$(cd "$TG" && python3 -c "from tinygrad.helpers import temp; print(temp('profile.pkl', append_user=True))")
+mkdir -p "$out"; rm -f "$prof"
+# Instructions are traced only on WGP 0 / SA 0 of each SE; on a busy desktop a wave lands elsewhere, so
+# by default pin dispatch to SE0's traced unit. Any SQTT_* variable (and AMD_AQL) in the caller's env is forwarded.
+sqtt_env=(--env SQTT_LIMIT_SE=${SQTT_LIMIT_SE:-2} --env SQTT_ITRACE_SE_MASK=${SQTT_ITRACE_SE_MASK:-1})
+while IFS='=' read -r k v; do [[ ( $k == SQTT_* && $k != SQTT_LIMIT_SE && $k != SQTT_ITRACE_SE_MASK ) || $k == AMD_AQL ]] && sqtt_env+=(--env "$k=$v"); done < <(env)
+run_env=(DEV=AMD VIZ=-2 PYTHONPATH=. PATH=/opt/rocm/bin:/usr/bin:/bin ROCM_PATH=/opt/rocm)
+if command -v gpu-wait > /dev/null; then
+  gpu-wait run --timeout 300 --vram 2 --label "sqtt-$name" --cwd "$TG" "${sqtt_env[@]}" "${run_env[@]/#/--env=}" \
+    -- bash -c "python3 $cmd" || { echo "FAIL run: capture job failed"; exit 1; }
+else
+  plain=(); for e in "${sqtt_env[@]}"; do [[ $e == --env ]] || plain+=("$e"); done
+  (cd "$TG" && env "${plain[@]}" "${run_env[@]}" timeout 300 python3 $cmd) || { echo "FAIL run: capture failed"; exit 1; }  # $cmd: script plus arguments
+fi
+[[ -s $prof ]] || { echo "FAIL profile: $prof not written"; exit 1; }
+cd "$TG" && python3 - "$prof" "$out/profile_$name.pkl" <<'EOF'
+import pickle, sys
+ev = [e for e in pickle.load(open(sys.argv[1], "rb")) if type(e).__name__ in {"ProfilePMCEvent", "ProfileSQTTEvent", "ProfileProgramEvent"}]
+n = sum(type(e).__name__ == "ProfileSQTTEvent" for e in ev)
+if not n: sys.exit("FAIL trace: no ProfileSQTTEvent in profile")
+pickle.dump(ev, open(sys.argv[2], "wb")); print(f"saved {sys.argv[2]} ({n} SQTT events)")
+EOF

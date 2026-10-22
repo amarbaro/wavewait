@@ -1,0 +1,34 @@
+    pc    avg   max   n  instruction
+0x1900  884.2   888   4  s_clause 0x2
+0x1904    1.0     1   4  s_load_b32 s2, s[0:1], 0x24
+0x190c    1.0     1   4  s_load_b128 s[4:7], s[0:1], null
+0x1914    1.0     1   4  s_load_b64 s[0:1], s[0:1], 0x10
+0x191c  781.8   784   4  s_waitcnt lgkmcnt(0)
+0x1920    1.0     1   4  s_and_b32 s2, s2, 0xffff
+0x192c   12.5    16   4  v_mad_u64_u32 v[1:2], null, s15, s2, v[0:1]
+0x1934    6.5    10   4  v_lshlrev_b32_e32 v0, 2, v0
+0x1938    3.8     7   4  v_ashrrev_i32_e32 v2, 31, v1
+0x1940    6.8     8   4  v_lshlrev_b64 v[1:2], 2, v[1:2]
+0x1948    6.8     9   4  v_add_co_u32 v3, vcc_lo, s6, v1
+0x1954    5.2     6   4  v_add_co_ci_u32_e64 v4, null, s7, v2, vcc_lo
+0x195c   17.0    18   4  global_load_b32 v5, v[3:4], off
+0x1964    8.5    10   4  v_add_co_u32 v3, vcc_lo, s0, v1
+0x196c    5.0     5   4  v_add_co_ci_u32_e64 v4, null, s1, v2, vcc_lo
+0x1974  673.5   677   4  s_waitcnt vmcnt(0)
+0x1978    1.0     1   4  ds_store_b32 v0, v5
+0x1980   33.2    34   4  s_waitcnt lgkmcnt(0)
+0x1984    1.0     1   4  s_waitcnt_depctr 0xffe3
+0x1988    2.5     5   4  s_barrier
+0x198c   26.8    41   4  global_load_b32 v3, v[3:4], off
+0x1994   17.5    19   4  v_sub_nc_u32_e32 v0, 0, v0
+0x1998   16.8    17   4  ds_load_b32 v0, v0 offset:1020
+0x19a0  685.2   686   4  s_waitcnt vmcnt(0) lgkmcnt(0)
+0x19a4    2.0     4   4  v_fmac_f32_e32 v3, 2.0, v0
+0x19a8    1.2     2   4  v_add_co_u32 v0, vcc_lo, s4, v1
+0x19b4    5.0     5   4  v_add_co_ci_u32_e64 v1, null, s5, v2, vcc_lo
+0x19bc   16.5    17   4  global_store_b32 v[0:1], v3, off
+
+top 3 by average delta:
+0x1900  884.2  s_clause 0x2
+0x191c  781.8  s_waitcnt lgkmcnt(0)
+0x19a0  685.2  s_waitcnt vmcnt(0) lgkmcnt(0)

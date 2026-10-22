@@ -1,0 +1,694 @@
+5888	8	4094165504	s_load_b128 s[8:11], s[0:1], 0x20
+5896	4	838860933	v_lshrrev_b32_e32 v0, 5, v0
+5900	4	3196190735	s_mov_b32 s2, s15
+5904	4	3196256384	s_mov_b32 s3, 0
+5908	4	3213295625	s_delay_alu instid0(SALU_CYCLE_1)
+5912	4	2223145730	s_lshl_b64 s[2:3], s[2:3], 3
+5916	4	3213296769	s_delay_alu instid0(VALU_DEP_1) | instid1(SALU_CYCLE_1)
+5920	8	3607101958	v_add_co_u32 v6, s2, s2, v0
+5928	4	3213295617	s_delay_alu instid0(VALU_DEP_1)
+5932	8	3575675911	v_add_co_ci_u32_e64 v7, null, s3, 0, s2
+5940	4	3213491207	s_waitcnt lgkmcnt(0)
+5944	4	2248384264	s_ashr_i32 s3, s8, 31
+5948	4	3196190728	s_mov_b32 s2, s8
+5952	4	3213296769	s_delay_alu instid0(VALU_DEP_1) | instid1(SALU_CYCLE_1)
+5956	4	2091387906	v_cmp_gt_i64_e32 vcc_lo, s[2:3], v[6:7]
+5960	4	3196199018	s_and_saveexec_b32 s2, vcc_lo
+5964	4	3215262502	s_cbranch_execz 806
+5968	8	4094165248	s_load_b128 s[4:7], s[0:1], null
+5976	4	2249039625	s_ashr_i32 s13, s9, 31
+5980	8	3609133072	v_mbcnt_lo_u32_b32 v16, -1, 0
+5988	4	2231539725	s_lshr_b32 s2, s13, 24
+5992	4	3196846089	s_mov_b32 s12, s9
+5996	4	2164392457	s_add_i32 s2, s9, s2
+6000	4	2248384266	s_ashr_i32 s3, s10, 31
+6004	4	2249099266	s_ashr_i32 s14, s2, 8
+6008	4	3196190730	s_mov_b32 s2, s10
+6012	4	2249170702	s_ashr_i32 s15, s14, 31
+6016	4	2091256834	v_cmp_le_i64_e32 vcc_lo, s[2:3], v[6:7]
+6020	4	2223540238	s_lshl_b64 s[8:9], s[14:15], 8
+6024	4	839917700	v_lshrrev_b32_e32 v8, 4, v16
+6028	4	3205565448	s_cmp_lg_u64 s[8:9], s[12:13]
+6032	4	2550300685	s_cselect_b32 s2, s13, 0
+6036	4	3213296825	s_delay_alu instid0(SALU_CYCLE_1) | instskip(SKIP_2) | instid1(SALU_CYCLE_1)
+6040	4	2148011522	s_add_u32 s8, s2, s14
+6044	4	2181631746	s_addc_u32 s9, s2, s15
+6048	4	3196199018	s_and_saveexec_b32 s2, vcc_lo
+6052	4	2366374526	s_xor_b32 s12, exec_lo, s2
+6056	4	3215262052	s_cbranch_execz 356
+6060	4	2115109504	v_mov_b32_e32 v9, 0
+6064	4	3196911742	s_mov_b32 s13, exec_lo
+6068	4	3213295617	s_delay_alu instid0(VALU_DEP_1)
+6072	4	2116158217	v_mov_b32_e32 v17, v9
+6076	4	2116289289	v_mov_b32_e32 v18, v9
+6080	4	2116420361	v_mov_b32_e32 v19, v9
+6084	4	2116682505	v_mov_b32_e32 v21, v9
+6088	4	2116944649	v_mov_b32_e32 v23, v9
+6092	4	2117206793	v_mov_b32_e32 v25, v9
+6096	4	2117468937	v_mov_b32_e32 v27, v9
+6100	4	2116551433	v_mov_b32_e32 v20, v9
+6104	4	2116813577	v_mov_b32_e32 v22, v9
+6108	4	2117075721	v_mov_b32_e32 v24, v9
+6112	4	2117337865	v_mov_b32_e32 v26, v9
+6116	4	2117600009	v_mov_b32_e32 v28, v9
+6120	4	2117731081	v_mov_b32_e32 v29, v9
+6124	4	2117862153	v_mov_b32_e32 v30, v9
+6128	4	2117993225	v_mov_b32_e32 v31, v9
+6132	4	2108166152	v_cmpx_gt_i64_e32 s[8:9], v[8:9]
+6136	4	3215262030	s_cbranch_execz 334
+6140	8	3391225984	v_dual_mov_b32 v31, 0 :: v_dual_lshlrev_b32 v4, 3, v16
+6148	8	3591372802	v_bfe_u32 v2, v16, 2, 2
+6156	4	906371201	v_and_b32_e32 v3, 1, v16
+6160	4	838869121	v_lshrrev_b32_e32 v0, 1, v16
+6164	4	3213296036	s_delay_alu instid0(VALU_DEP_4) | instskip(SKIP_1) | instid1(VALU_DEP_3)
+6168	8	3391357056	v_dual_mov_b32 v29, 0 :: v_dual_and_b32 v12, 16, v4
+6176	8	3607194117	v_sub_co_u32 v5, vcc_lo, v6, s10
+6184	4	905969796	v_and_b32_e32 v0, 4, v0
+6188	4	2114454144	v_mov_b32_e32 v4, 0
+6192	8	3595960321	v_lshl_or_b32 v1, v2, 1, v3
+6200	8	3595960333	v_lshl_or_b32 v13, v2, 5, v12
+6208	8	3575806986	v_subrev_co_ci_u32_e64 v10, null, s3, v7, vcc_lo
+6216	8	2516778761	s_mul_i32 s2, s9, 0x90
+6224	8	2525232904	s_mul_hi_u32 s3, s8, 0x90
+6232	4	2249105163	s_ashr_i32 s14, s11, 31
+6236	4	2164457987	s_add_i32 s3, s3, s2
+6240	8	2516778760	s_mul_i32 s2, s8, 0x90
+6248	8	3609985039	v_mul_lo_u32 v15, s3, v5
+6256	8	3607102241	v_add_co_u32 v33, s3, v13, 16
+6264	4	2115633929	v_mov_b32_e32 v13, v9
+6268	4	1275068673	v_sub_nc_u32_e32 v0, v1, v0
+6272	8	402788607	v_mul_hi_u32_u24_e32 v1, 0x90, v8
+6280	8	3609985038	v_mul_lo_u32 v14, s2, v10
+6288	4	2089944193	v_cmp_lt_u32_e32 vcc_lo, 1, v2
+6292	4	3213295620	s_delay_alu instid0(VALU_DEP_4)
+6296	8	3391225984	v_dual_mov_b32 v25, 0 :: v_dual_lshlrev_b32 v32, 3, v0
+6304	4	2117468800	v_mov_b32_e32 v27, 0
+6308	8	369103103	v_mul_u32_u24_e32 v0, 0x90, v8
+6316	8	3575675938	v_add_co_ci_u32_e64 v34, null, 0, 0, s3
+6324	4	3213491207	s_waitcnt lgkmcnt(0)
+6328	4	2147683078	s_add_u32 s3, s6, s11
+6332	4	2181697031	s_addc_u32 s10, s7, s14
+6336	8	3607002122	v_mad_u64_u32 v[10:11], null, s2, v5, v[0:1]
+6344	4	805307526	v_lshlrev_b32_e32 v0, 6, v2
+6348	4	805439109	v_lshlrev_b32_e32 v1, 5, v3
+6352	8	3562668034	v_cmp_eq_u64_e64 s2, 0, v[3:4]
+6360	8	3390046336	v_dual_mov_b32 v30, 0 :: v_dual_mov_b32 v23, 0
+6368	4	3213296196	s_delay_alu instid0(VALU_DEP_4) | instskip(SKIP_3) | instid1(VALU_DEP_4)
+6372	8	3595960320	v_lshl_or_b32 v0, v8, 8, v0
+6380	8	3390046336	v_dual_mov_b32 v28, 0 :: v_dual_mov_b32 v21, 0
+6388	8	3595894786	v_add3_u32 v2, v15, v11, v14
+6396	8	3607102218	v_add_co_u32 v10, s3, s3, v10
+6404	8	3596091397	v_or3_b32 v5, v0, v1, v12
+6412	4	2115502856	v_mov_b32_e32 v12, v8
+6416	4	3213295620	s_delay_alu instid0(VALU_DEP_4)
+6420	8	3575675915	v_add_co_ci_u32_e64 v11, null, s10, v2, s3
+6428	8	3390046336	v_dual_mov_b32 v26, 0 :: v_dual_mov_b32 v19, 0
+6436	8	3390046336	v_dual_mov_b32 v24, 0 :: v_dual_mov_b32 v17, 0
+6444	8	3390046336	v_dual_mov_b32 v22, 0 :: v_dual_mov_b32 v9, 0
+6452	4	2116551296	v_mov_b32_e32 v20, 0
+6456	4	2116289152	v_mov_b32_e32 v18, 0
+6460	4	3196715136	s_mov_b32 s10, 0
+6464	4	3214934233	s_branch 217
+6468	4	2357068670	s_or_b32 exec_lo, exec_lo, s3
+6472	8	3607102243	v_add_co_u32 v35, s3, v10, v33
+6480	8	3611164711	v_ashrrev_i64 v[39:40], 31, v[4:5]
+6488	8	3575675940	v_add_co_ci_u32_e64 v36, null, v11, v34, s3
+6496	4	2114351887	v_clz_i32_u32_e32 v3, v15
+6500	4	2115007234	v_clz_i32_u32_e32 v8, v2
+6504	4	2120104064	v_mov_b16_e32 v47.l, 0
+6508	8	3607102251	v_add_co_u32 v43, s3, s4, v39
+6516	8	3697147904	global_load_b128 v[35:38], v[35:36], off
+6524	8	3575675948	v_add_co_ci_u32_e64 v44, null, s5, v40, s3
+6532	4	3213164545	s_clause 0x1
+6536	8	3697147904	global_load_b128 v[39:42], v[43:44], off
+6544	8	3697147920	global_load_b128 v[43:46], v[43:44], off offset:16
+6552	4	637929120	v_min_u32_e32 v3, 32, v3
+6556	4	638587040	v_min_u32_e32 v8, 32, v8
+6560	4	2120235311	v_mov_b16_e32 v48.l, v47.l
+6564	4	2120497455	v_mov_b16_e32 v50.l, v47.l
+6568	8	3607102220	v_add_co_u32 v12, s3, v12, 2
+6576	8	3611033614	v_lshlrev_b64 v[14:15], v3, v[14:15]
+6584	8	3611033601	v_lshlrev_b64 v[1:2], v8, v[1:2]
+6592	4	1275463328	v_sub_nc_u32_e32 v3, 32, v3
+6596	4	1276121248	v_sub_nc_u32_e32 v8, 32, v8
+6600	8	3575675917	v_add_co_ci_u32_e64 v13, null, 0, v13, s3
+6608	4	639376513	v_min_u32_e32 v14, 1, v14
+6612	4	637665921	v_min_u32_e32 v1, 1, v1
+6616	12	3607102218	v_add_co_u32 v10, s3, 0x120, v10
+6628	4	2120366383	v_mov_b16_e32 v49.l, v47.l
+6632	4	3213296148	s_delay_alu instid0(VALU_DEP_4) | instskip(NEXT) | instid1(VALU_DEP_4)
+6636	4	941366543	v_or_b32_e32 v14, v15, v14
+6640	4	939655938	v_or_b32_e32 v1, v2, v1
+6644	4	2120628527	v_mov_b16_e32 v51.l, v47.l
+6648	4	2120759599	v_mov_b16_e32 v52.l, v47.l
+6652	4	2120890671	v_mov_b16_e32 v53.l, v47.l
+6656	4	2115767566	v_cvt_f32_u32_e32 v14, v14
+6660	4	2114063617	v_cvt_f32_u32_e32 v1, v1
+6664	4	2121021743	v_mov_b16_e32 v54.l, v47.l
+6668	4	2121152815	v_mov_b16_e32 v55.l, v47.l
+6672	4	2121283887	v_mov_b16_e32 v56.l, v47.l
+6676	8	3608936451	v_ldexp_f32 v3, v14, v3
+6684	8	3608936449	v_ldexp_f32 v1, v1, v8
+6692	4	2114205999	v_mov_b16_e32 v2.l, v47.l
+6696	4	2115909935	v_mov_b16_e32 v15.l, v47.l
+6700	4	2121414959	v_mov_b16_e32 v57.l, v47.l
+6704	8	3424649219	v_fma_mix_f32 v3, v0, v3, neg(0) op_sel_hi:[1,0,0]
+6712	8	3424651323	v_fma_mix_f32 v59, v0, -v1, neg(0) op_sel:[1,0,0] op_sel_hi:[1,0,0]
+6720	4	2121546031	v_mov_b16_e32 v58.l, v47.l
+6724	4	2114992431	v_mov_b16_e32 v8.l, v47.l
+6728	4	2115778863	v_mov_b16_e32 v14.l, v47.l
+6732	8	3575675915	v_add_co_ci_u32_e64 v11, null, 0, v11, s3
+6740	8	3562209283	v_cmp_le_i64_e64 s3, s[8:9], v[12:13]
+6748	8	1242172159	v_add_nc_u32_e32 v5, 0x200, v5
+6756	4	2349468163	s_or_b32 s10, s3, s10
+6760	4	3213429751	s_waitcnt vmcnt(2)
+6764	4	846743188	v_lshrrev_b32_e32 v60, 20, v35
+6768	8	3610836992	v_lshrrev_b16 v0.l, 4, v35.l
+6776	4	846874772	v_lshrrev_b32_e32 v61, 20, v36
+6780	8	3610853376	v_lshrrev_b16 v0.h, 4, v36.l op_sel:[0,0,1]
+6788	4	847006356	v_lshrrev_b32_e32 v62, 20, v37
+6792	8	3610836993	v_lshrrev_b16 v1.l, 4, v37.l
+6800	8	3610853377	v_lshrrev_b16 v1.h, 4, v38.l op_sel:[0,0,1]
+6808	12	3613540412	v_and_b16 v60.h, 0xf0f, v60.l op_sel:[0,0,1]
+6820	12	3613524028	v_and_b16 v60.l, 0xf0f, v0.l
+6832	12	3613540413	v_and_b16 v61.h, 0xf0f, v61.l op_sel:[0,0,1]
+6844	12	3613528125	v_and_b16 v61.l, 0xf0f, v0.h op_sel:[0,1,0]
+6856	12	3613540352	v_and_b16 v0.h, 0xf0f, v62.l op_sel:[0,0,1]
+6868	12	3613523968	v_and_b16 v0.l, 0xf0f, v1.l
+6880	12	3613528126	v_and_b16 v62.l, 0xf0f, v1.h op_sel:[0,1,0]
+6892	4	3213428727	s_waitcnt vmcnt(1)
+6896	4	839011984	v_lshrrev_b32_e32 v1, 16, v39
+6900	4	847137940	v_lshrrev_b32_e32 v63, 20, v38
+6904	4	2136881447	v_mov_b16_e32 v47.h, v39.l
+6908	4	843993232	v_lshrrev_b32_e32 v39, 16, v40
+6912	8	910970111	v_and_b32_e32 v38, 0xf0f0f0f, v38
+6920	4	2137012481	v_mov_b16_e32 v48.h, v1.l
+6924	8	910575359	v_and_b32_e32 v35, 0xf0f0f0f, v35
+6932	12	3613540414	v_and_b16 v62.h, 0xf0f, v63.l op_sel:[0,0,1]
+6944	4	2137274663	v_mov_b16_e32 v50.h, v39.l
+6948	8	910838527	v_and_b32_e32 v37, 0xf0f0f0f, v37
+6956	4	2137143592	v_mov_b16_e32 v49.h, v40.l
+6960	8	3573612579	v_cndmask_b32_e64 v35, v60, v35, s2
+6968	4	2137405737	v_mov_b16_e32 v51.h, v41.l
+6972	4	844124816	v_lshrrev_b32_e32 v40, 16, v41
+6976	4	844256400	v_lshrrev_b32_e32 v41, 16, v42
+6980	8	3573612582	v_cndmask_b32_e64 v38, v62, v38, s2
+6988	4	2114069283	v_cvt_f32_ubyte0_e32 v1, v35
+6992	8	910706943	v_and_b32_e32 v36, 0xf0f0f0f, v36
+7000	8	3573612544	v_cndmask_b32_e64 v0, v0, v37, s2
+7008	4	2137667882	v_mov_b16_e32 v53.h, v42.l
+7012	4	3213427703	s_waitcnt vmcnt(0)
+7016	4	2137930027	v_mov_b16_e32 v55.h, v43.l
+7020	4	844387984	v_lshrrev_b32_e32 v42, 16, v43
+7024	8	3573612580	v_cndmask_b32_e64 v36, v61, v36, s2
+7032	4	2130983212	v_mov_b16_e32 v2.h, v44.l
+7036	4	844519568	v_lshrrev_b32_e32 v43, 16, v44
+7040	4	2138192173	v_mov_b16_e32 v57.h, v45.l
+7044	4	844651152	v_lshrrev_b32_e32 v44, 16, v45
+7048	4	2131769646	v_mov_b16_e32 v8.h, v46.l
+7052	4	844782736	v_lshrrev_b32_e32 v45, 16, v46
+7056	4	2137536808	v_mov_b16_e32 v52.h, v40.l
+7060	4	2137798953	v_mov_b16_e32 v54.h, v41.l
+7064	4	2118788387	v_cvt_f32_ubyte1_e32 v37, v35
+7068	4	2119051043	v_cvt_f32_ubyte2_e32 v39, v35
+7072	4	2118527267	v_cvt_f32_ubyte3_e32 v35, v35
+7076	4	2119181092	v_cvt_f32_ubyte0_e32 v40, v36
+7080	4	2119312676	v_cvt_f32_ubyte1_e32 v41, v36
+7084	4	2119968548	v_cvt_f32_ubyte2_e32 v46, v36
+7088	4	2118658340	v_cvt_f32_ubyte3_e32 v36, v36
+7092	4	2121802496	v_cvt_f32_ubyte0_e32 v60, v0
+7096	4	2121934080	v_cvt_f32_ubyte1_e32 v61, v0
+7100	4	2122065664	v_cvt_f32_ubyte2_e32 v62, v0
+7104	4	2122197286	v_cvt_f32_ubyte3_e32 v63, v38
+7108	4	2122327846	v_cvt_f32_ubyte2_e32 v64, v38
+7112	4	2122458406	v_cvt_f32_ubyte1_e32 v65, v38
+7116	4	2118918950	v_cvt_f32_ubyte0_e32 v38, v38
+7120	4	2113939712	v_cvt_f32_ubyte3_e32 v0, v0
+7124	8	3591569471	v_fma_f32 v63, v63, v3, v59
+7132	8	3591569472	v_fma_f32 v64, v64, v3, v59
+7140	8	3591569473	v_fma_f32 v65, v65, v3, v59
+7148	8	3591569446	v_fma_f32 v38, v38, v3, v59
+7156	8	3591569408	v_fma_f32 v0, v0, v3, v59
+7164	8	3591569470	v_fma_f32 v62, v62, v3, v59
+7172	8	3591569469	v_fma_f32 v61, v61, v3, v59
+7180	8	3591569468	v_fma_f32 v60, v60, v3, v59
+7188	8	3591569444	v_fma_f32 v36, v36, v3, v59
+7196	8	3591569454	v_fma_f32 v46, v46, v3, v59
+7204	8	3591569449	v_fma_f32 v41, v41, v3, v59
+7212	8	3591569448	v_fma_f32 v40, v40, v3, v59
+7220	8	3591569443	v_fma_f32 v35, v35, v3, v59
+7228	8	3591569447	v_fma_f32 v39, v39, v3, v59
+7236	8	3591569445	v_fma_f32 v37, v37, v3, v59
+7244	4	1450575617	v_fmac_f32_e32 v59, v1, v3
+7248	4	2138061098	v_mov_b16_e32 v56.h, v42.l
+7252	4	2132687147	v_mov_b16_e32 v15.h, v43.l
+7256	4	2138323244	v_mov_b16_e32 v58.h, v44.l
+7260	4	2132556077	v_mov_b16_e32 v14.h, v45.l
+7264	8	3355467579	v_dual_fmac_f32 v31, v59, v47 :: v_dual_fmac_f32 v30, v37, v48
+7272	8	3355468583	v_dual_fmac_f32 v29, v39, v49 :: v_dual_fmac_f32 v26, v40, v51
+7280	4	1446536483	v_fmac_f32_e32 v28, v35, v50
+7284	8	3355470121	v_dual_fmac_f32 v24, v41, v52 :: v_dual_fmac_f32 v27, v60, v55
+7292	8	3355470638	v_dual_fmac_f32 v22, v46, v53 :: v_dual_fmac_f32 v25, v61, v56
+7300	8	3355471140	v_dual_fmac_f32 v20, v36, v54 :: v_dual_fmac_f32 v19, v38, v57
+7308	4	1445856574	v_fmac_f32_e32 v23, v62, v2
+7312	8	3355451136	v_dual_fmac_f32 v21, v0, v15 :: v_dual_fmac_f32 v18, v65, v58
+7320	4	1445073216	v_fmac_f32_e32 v17, v64, v8
+7324	4	1444027711	v_fmac_f32_e32 v9, v63, v14
+7328	4	2440956542	s_and_not1_b32 exec_lo, exec_lo, s10
+7332	4	3215261730	s_cbranch_execz 34
+7336	8	3697147904	global_load_b128 v[0:3], v[10:11], off
+7344	4	3213427703	s_waitcnt vmcnt(0)
+7348	4	843449120	v_lshrrev_b32_e32 v35, v32, v1
+7352	4	839910688	v_lshrrev_b32_e32 v8, v32, v2
+7356	4	3196264554	s_and_saveexec_b32 s3, vcc_lo
+7360	4	3213295625	s_delay_alu instid0(SALU_CYCLE_1)
+7364	4	2365784958	s_xor_b32 s3, exec_lo, s3
+7368	4	3215261712	s_cbranch_execz 16
+7372	4	838993696	v_lshrrev_b32_e32 v1, v32, v3
+7376	8	3591372802	v_bfe_u32 v2, v3, v32, 4
+7384	4	839272066	v_lshrrev_b32_e32 v3, 2, v35
+7388	4	839913602	v_lshrrev_b32_e32 v8, 2, v8
+7392	4	3213296020	s_delay_alu instid0(VALU_DEP_4) | instskip(NEXT) | instid1(VALU_DEP_3)
+7396	8	3591372801	v_bfe_u32 v1, v1, 4, 4
+7404	8	3596025859	v_and_or_b32 v3, v3, 48, v2
+7412	4	2114192132	v_mov_b32_e32 v2, v4
+7416	4	2115896068	v_mov_b32_e32 v15, v4
+7420	4	3213296148	s_delay_alu instid0(VALU_DEP_4) | instskip(NEXT) | instid1(VALU_DEP_4)
+7424	8	3596025857	v_and_or_b32 v1, v8, 48, v1
+7432	4	2115764995	v_mov_b32_e32 v14, v3
+7436	4	3196268547	s_and_not1_saveexec_b32 s3, s3
+7440	4	3215326988	s_cbranch_execz 65292
+7444	4	906367167	v_and_b32_e32 v3, 63, v8
+7448	8	3391357188	v_dual_mov_b32 v15, v4 :: v_dual_and_b32 v14, 63, v35
+7456	4	3213295618	s_delay_alu instid0(VALU_DEP_2)
+7460	8	3390046468	v_dual_mov_b32 v2, v4 :: v_dual_mov_b32 v1, v3
+7468	4	3214999301	s_branch 65285
+7472	4	2357070462	s_or_b32 exec_lo, exec_lo, s10
+7476	4	3213295625	s_delay_alu instid0(SALU_CYCLE_1)
+7480	4	2357071230	s_or_b32 exec_lo, exec_lo, s13
+7484	4	3196727308	s_and_not1_saveexec_b32 s10, s12
+7488	4	3215262042	s_cbranch_execz 346
+7492	4	2115109504	v_mov_b32_e32 v9, 0
+7496	4	3196780670	s_mov_b32 s11, exec_lo
+7500	4	3213295617	s_delay_alu instid0(VALU_DEP_1)
+7504	4	2116158217	v_mov_b32_e32 v17, v9
+7508	4	2116289289	v_mov_b32_e32 v18, v9
+7512	4	2116420361	v_mov_b32_e32 v19, v9
+7516	4	2116682505	v_mov_b32_e32 v21, v9
+7520	4	2116944649	v_mov_b32_e32 v23, v9
+7524	4	2117206793	v_mov_b32_e32 v25, v9
+7528	4	2117468937	v_mov_b32_e32 v27, v9
+7532	4	2116551433	v_mov_b32_e32 v20, v9
+7536	4	2116813577	v_mov_b32_e32 v22, v9
+7540	4	2117075721	v_mov_b32_e32 v24, v9
+7544	4	2117337865	v_mov_b32_e32 v26, v9
+7548	4	2117600009	v_mov_b32_e32 v28, v9
+7552	4	2117731081	v_mov_b32_e32 v29, v9
+7556	4	2117862153	v_mov_b32_e32 v30, v9
+7560	4	2117993225	v_mov_b32_e32 v31, v9
+7564	4	2108166152	v_cmpx_gt_i64_e32 s[8:9], v[8:9]
+7568	4	3215262020	s_cbranch_execz 324
+7572	8	3591372802	v_bfe_u32 v2, v16, 2, 2
+7580	4	906371201	v_and_b32_e32 v3, 1, v16
+7584	4	838869121	v_lshrrev_b32_e32 v0, 1, v16
+7588	8	3607002122	v_mad_u64_u32 v[10:11], null, v6, s8, 0
+7596	4	805445763	v_lshlrev_b32_e32 v1, 3, v16
+7600	8	3609985029	v_mul_lo_u32 v5, v7, s8
+7608	8	3595960324	v_lshl_or_b32 v4, v2, 1, v3
+7616	4	905969796	v_and_b32_e32 v0, 4, v0
+7620	8	3609985038	v_mul_lo_u32 v14, v6, s9
+7628	8	404361471	v_mul_hi_u32_u24_e32 v13, 0x90, v8
+7636	8	370675967	v_mul_u32_u24_e32 v12, 0x90, v8
+7644	8	3391357056	v_dual_mov_b32 v30, 0 :: v_dual_and_b32 v17, 16, v1
+7652	4	1277034756	v_sub_nc_u32_e32 v15, v4, v0
+7656	4	2114454144	v_mov_b32_e32 v4, 0
+7660	4	3213295620	s_delay_alu instid0(VALU_DEP_4)
+7664	12	3607002112	v_mad_u64_u32 v[0:1], null, 0x90, v10, v[12:13]
+7676	8	3595894789	v_add3_u32 v5, v11, v14, v5
+7684	8	3391225984	v_dual_mov_b32 v28, 0 :: v_dual_lshlrev_b32 v11, 6, v2
+7692	8	3595960330	v_lshl_or_b32 v10, v2, 5, v17
+7700	4	2089944193	v_cmp_lt_u32_e32 vcc_lo, 1, v2
+7704	8	3562668034	v_cmp_eq_u64_e64 s2, 0, v[3:4]
+7712	8	3391225984	v_dual_mov_b32 v29, 0 :: v_dual_lshlrev_b32 v12, 5, v3
+7720	12	3607002114	v_mad_u64_u32 v[2:3], null, 0x90, v5, v[1:2]
+7732	8	3595960321	v_lshl_or_b32 v1, v8, 8, v11
+7740	8	3607102241	v_add_co_u32 v33, s3, v10, 16
+7748	4	3213295617	s_delay_alu instid0(VALU_DEP_1)
+7752	8	3575675938	v_add_co_ci_u32_e64 v34, null, 0, 0, s3
+7760	4	3213491207	s_waitcnt lgkmcnt(0)
+7764	8	3607102218	v_add_co_u32 v10, s3, s6, v0
+7772	8	3391225984	v_dual_mov_b32 v31, 0 :: v_dual_lshlrev_b32 v32, 3, v15
+7780	8	3575675915	v_add_co_ci_u32_e64 v11, null, s7, v2, s3
+7788	8	3596091397	v_or3_b32 v5, v1, v12, v17
+7796	8	3390046473	v_dual_mov_b32 v13, v9 :: v_dual_mov_b32 v12, v8
+7804	8	3390046336	v_dual_mov_b32 v26, 0 :: v_dual_mov_b32 v27, 0
+7812	8	3390046336	v_dual_mov_b32 v24, 0 :: v_dual_mov_b32 v25, 0
+7820	8	3390046336	v_dual_mov_b32 v22, 0 :: v_dual_mov_b32 v23, 0
+7828	8	3390046336	v_dual_mov_b32 v20, 0 :: v_dual_mov_b32 v21, 0
+7836	8	3390046336	v_dual_mov_b32 v19, 0 :: v_dual_mov_b32 v18, 0
+7844	4	2116158080	v_mov_b32_e32 v17, 0
+7848	4	2115109504	v_mov_b32_e32 v9, 0
+7852	4	3196452992	s_mov_b32 s6, 0
+7856	4	3214934233	s_branch 217
+7860	4	2357068670	s_or_b32 exec_lo, exec_lo, s3
+7864	8	3607102243	v_add_co_u32 v35, s3, v10, v33
+7872	8	3611164711	v_ashrrev_i64 v[39:40], 31, v[4:5]
+7880	8	3575675940	v_add_co_ci_u32_e64 v36, null, v11, v34, s3
+7888	4	2114351887	v_clz_i32_u32_e32 v3, v15
+7892	4	2115007234	v_clz_i32_u32_e32 v8, v2
+7896	4	2120104064	v_mov_b16_e32 v47.l, 0
+7900	8	3607102251	v_add_co_u32 v43, s3, s4, v39
+7908	8	3697147904	global_load_b128 v[35:38], v[35:36], off
+7916	8	3575675948	v_add_co_ci_u32_e64 v44, null, s5, v40, s3
+7924	4	3213164545	s_clause 0x1
+7928	8	3697147904	global_load_b128 v[39:42], v[43:44], off
+7936	8	3697147920	global_load_b128 v[43:46], v[43:44], off offset:16
+7944	4	637929120	v_min_u32_e32 v3, 32, v3
+7948	4	638587040	v_min_u32_e32 v8, 32, v8
+7952	4	2120235311	v_mov_b16_e32 v48.l, v47.l
+7956	4	2120497455	v_mov_b16_e32 v50.l, v47.l
+7960	8	3607102220	v_add_co_u32 v12, s3, v12, 2
+7968	8	3611033614	v_lshlrev_b64 v[14:15], v3, v[14:15]
+7976	8	3611033601	v_lshlrev_b64 v[1:2], v8, v[1:2]
+7984	4	1275463328	v_sub_nc_u32_e32 v3, 32, v3
+7988	4	1276121248	v_sub_nc_u32_e32 v8, 32, v8
+7992	8	3575675917	v_add_co_ci_u32_e64 v13, null, 0, v13, s3
+8000	4	639376513	v_min_u32_e32 v14, 1, v14
+8004	4	637665921	v_min_u32_e32 v1, 1, v1
+8008	12	3607102218	v_add_co_u32 v10, s3, 0x120, v10
+8020	4	2120366383	v_mov_b16_e32 v49.l, v47.l
+8024	4	3213296148	s_delay_alu instid0(VALU_DEP_4) | instskip(NEXT) | instid1(VALU_DEP_4)
+8028	4	941366543	v_or_b32_e32 v14, v15, v14
+8032	4	939655938	v_or_b32_e32 v1, v2, v1
+8036	4	2120628527	v_mov_b16_e32 v51.l, v47.l
+8040	4	2120759599	v_mov_b16_e32 v52.l, v47.l
+8044	4	2120890671	v_mov_b16_e32 v53.l, v47.l
+8048	4	2115767566	v_cvt_f32_u32_e32 v14, v14
+8052	4	2114063617	v_cvt_f32_u32_e32 v1, v1
+8056	4	2121021743	v_mov_b16_e32 v54.l, v47.l
+8060	4	2121152815	v_mov_b16_e32 v55.l, v47.l
+8064	4	2121283887	v_mov_b16_e32 v56.l, v47.l
+8068	8	3608936451	v_ldexp_f32 v3, v14, v3
+8076	8	3608936449	v_ldexp_f32 v1, v1, v8
+8084	4	2114205999	v_mov_b16_e32 v2.l, v47.l
+8088	4	2115909935	v_mov_b16_e32 v15.l, v47.l
+8092	4	2121414959	v_mov_b16_e32 v57.l, v47.l
+8096	8	3424649219	v_fma_mix_f32 v3, v0, v3, neg(0) op_sel_hi:[1,0,0]
+8104	8	3424651323	v_fma_mix_f32 v59, v0, -v1, neg(0) op_sel:[1,0,0] op_sel_hi:[1,0,0]
+8112	4	2121546031	v_mov_b16_e32 v58.l, v47.l
+8116	4	2114992431	v_mov_b16_e32 v8.l, v47.l
+8120	4	2115778863	v_mov_b16_e32 v14.l, v47.l
+8124	8	3575675915	v_add_co_ci_u32_e64 v11, null, 0, v11, s3
+8132	8	3562209283	v_cmp_le_i64_e64 s3, s[8:9], v[12:13]
+8140	8	1242172159	v_add_nc_u32_e32 v5, 0x200, v5
+8148	4	2349204995	s_or_b32 s6, s3, s6
+8152	4	3213429751	s_waitcnt vmcnt(2)
+8156	4	846743188	v_lshrrev_b32_e32 v60, 20, v35
+8160	8	3610836992	v_lshrrev_b16 v0.l, 4, v35.l
+8168	4	846874772	v_lshrrev_b32_e32 v61, 20, v36
+8172	8	3610853376	v_lshrrev_b16 v0.h, 4, v36.l op_sel:[0,0,1]
+8180	4	847006356	v_lshrrev_b32_e32 v62, 20, v37
+8184	8	3610836993	v_lshrrev_b16 v1.l, 4, v37.l
+8192	8	3610853377	v_lshrrev_b16 v1.h, 4, v38.l op_sel:[0,0,1]
+8200	12	3613540412	v_and_b16 v60.h, 0xf0f, v60.l op_sel:[0,0,1]
+8212	12	3613524028	v_and_b16 v60.l, 0xf0f, v0.l
+8224	12	3613540413	v_and_b16 v61.h, 0xf0f, v61.l op_sel:[0,0,1]
+8236	12	3613528125	v_and_b16 v61.l, 0xf0f, v0.h op_sel:[0,1,0]
+8248	12	3613540352	v_and_b16 v0.h, 0xf0f, v62.l op_sel:[0,0,1]
+8260	12	3613523968	v_and_b16 v0.l, 0xf0f, v1.l
+8272	12	3613528126	v_and_b16 v62.l, 0xf0f, v1.h op_sel:[0,1,0]
+8284	4	3213428727	s_waitcnt vmcnt(1)
+8288	4	839011984	v_lshrrev_b32_e32 v1, 16, v39
+8292	4	847137940	v_lshrrev_b32_e32 v63, 20, v38
+8296	4	2136881447	v_mov_b16_e32 v47.h, v39.l
+8300	4	843993232	v_lshrrev_b32_e32 v39, 16, v40
+8304	8	910970111	v_and_b32_e32 v38, 0xf0f0f0f, v38
+8312	4	2137012481	v_mov_b16_e32 v48.h, v1.l
+8316	8	910575359	v_and_b32_e32 v35, 0xf0f0f0f, v35
+8324	12	3613540414	v_and_b16 v62.h, 0xf0f, v63.l op_sel:[0,0,1]
+8336	4	2137274663	v_mov_b16_e32 v50.h, v39.l
+8340	8	910838527	v_and_b32_e32 v37, 0xf0f0f0f, v37
+8348	4	2137143592	v_mov_b16_e32 v49.h, v40.l
+8352	8	3573612579	v_cndmask_b32_e64 v35, v60, v35, s2
+8360	4	2137405737	v_mov_b16_e32 v51.h, v41.l
+8364	4	844124816	v_lshrrev_b32_e32 v40, 16, v41
+8368	4	844256400	v_lshrrev_b32_e32 v41, 16, v42
+8372	8	3573612582	v_cndmask_b32_e64 v38, v62, v38, s2
+8380	4	2114069283	v_cvt_f32_ubyte0_e32 v1, v35
+8384	8	910706943	v_and_b32_e32 v36, 0xf0f0f0f, v36
+8392	8	3573612544	v_cndmask_b32_e64 v0, v0, v37, s2
+8400	4	2137667882	v_mov_b16_e32 v53.h, v42.l
+8404	4	3213427703	s_waitcnt vmcnt(0)
+8408	4	2137930027	v_mov_b16_e32 v55.h, v43.l
+8412	4	844387984	v_lshrrev_b32_e32 v42, 16, v43
+8416	8	3573612580	v_cndmask_b32_e64 v36, v61, v36, s2
+8424	4	2130983212	v_mov_b16_e32 v2.h, v44.l
+8428	4	844519568	v_lshrrev_b32_e32 v43, 16, v44
+8432	4	2138192173	v_mov_b16_e32 v57.h, v45.l
+8436	4	844651152	v_lshrrev_b32_e32 v44, 16, v45
+8440	4	2131769646	v_mov_b16_e32 v8.h, v46.l
+8444	4	844782736	v_lshrrev_b32_e32 v45, 16, v46
+8448	4	2137536808	v_mov_b16_e32 v52.h, v40.l
+8452	4	2137798953	v_mov_b16_e32 v54.h, v41.l
+8456	4	2118788387	v_cvt_f32_ubyte1_e32 v37, v35
+8460	4	2119051043	v_cvt_f32_ubyte2_e32 v39, v35
+8464	4	2118527267	v_cvt_f32_ubyte3_e32 v35, v35
+8468	4	2119181092	v_cvt_f32_ubyte0_e32 v40, v36
+8472	4	2119312676	v_cvt_f32_ubyte1_e32 v41, v36
+8476	4	2119968548	v_cvt_f32_ubyte2_e32 v46, v36
+8480	4	2118658340	v_cvt_f32_ubyte3_e32 v36, v36
+8484	4	2121802496	v_cvt_f32_ubyte0_e32 v60, v0
+8488	4	2121934080	v_cvt_f32_ubyte1_e32 v61, v0
+8492	4	2122065664	v_cvt_f32_ubyte2_e32 v62, v0
+8496	4	2122197286	v_cvt_f32_ubyte3_e32 v63, v38
+8500	4	2122327846	v_cvt_f32_ubyte2_e32 v64, v38
+8504	4	2122458406	v_cvt_f32_ubyte1_e32 v65, v38
+8508	4	2118918950	v_cvt_f32_ubyte0_e32 v38, v38
+8512	4	2113939712	v_cvt_f32_ubyte3_e32 v0, v0
+8516	8	3591569471	v_fma_f32 v63, v63, v3, v59
+8524	8	3591569472	v_fma_f32 v64, v64, v3, v59
+8532	8	3591569473	v_fma_f32 v65, v65, v3, v59
+8540	8	3591569446	v_fma_f32 v38, v38, v3, v59
+8548	8	3591569408	v_fma_f32 v0, v0, v3, v59
+8556	8	3591569470	v_fma_f32 v62, v62, v3, v59
+8564	8	3591569469	v_fma_f32 v61, v61, v3, v59
+8572	8	3591569468	v_fma_f32 v60, v60, v3, v59
+8580	8	3591569444	v_fma_f32 v36, v36, v3, v59
+8588	8	3591569454	v_fma_f32 v46, v46, v3, v59
+8596	8	3591569449	v_fma_f32 v41, v41, v3, v59
+8604	8	3591569448	v_fma_f32 v40, v40, v3, v59
+8612	8	3591569443	v_fma_f32 v35, v35, v3, v59
+8620	8	3591569447	v_fma_f32 v39, v39, v3, v59
+8628	8	3591569445	v_fma_f32 v37, v37, v3, v59
+8636	4	1450575617	v_fmac_f32_e32 v59, v1, v3
+8640	4	2138061098	v_mov_b16_e32 v56.h, v42.l
+8644	4	2132687147	v_mov_b16_e32 v15.h, v43.l
+8648	4	2138323244	v_mov_b16_e32 v58.h, v44.l
+8652	4	2132556077	v_mov_b16_e32 v14.h, v45.l
+8656	8	3355467579	v_dual_fmac_f32 v31, v59, v47 :: v_dual_fmac_f32 v30, v37, v48
+8664	8	3355468583	v_dual_fmac_f32 v29, v39, v49 :: v_dual_fmac_f32 v26, v40, v51
+8672	4	1446536483	v_fmac_f32_e32 v28, v35, v50
+8676	8	3355470121	v_dual_fmac_f32 v24, v41, v52 :: v_dual_fmac_f32 v27, v60, v55
+8684	8	3355470638	v_dual_fmac_f32 v22, v46, v53 :: v_dual_fmac_f32 v25, v61, v56
+8692	8	3355471140	v_dual_fmac_f32 v20, v36, v54 :: v_dual_fmac_f32 v19, v38, v57
+8700	4	1445856574	v_fmac_f32_e32 v23, v62, v2
+8704	8	3355451136	v_dual_fmac_f32 v21, v0, v15 :: v_dual_fmac_f32 v18, v65, v58
+8712	4	1445073216	v_fmac_f32_e32 v17, v64, v8
+8716	4	1444027711	v_fmac_f32_e32 v9, v63, v14
+8720	4	2440955518	s_and_not1_b32 exec_lo, exec_lo, s6
+8724	4	3215261730	s_cbranch_execz 34
+8728	8	3697147904	global_load_b128 v[0:3], v[10:11], off
+8736	4	3213427703	s_waitcnt vmcnt(0)
+8740	4	843449120	v_lshrrev_b32_e32 v35, v32, v1
+8744	4	839910688	v_lshrrev_b32_e32 v8, v32, v2
+8748	4	3196264554	s_and_saveexec_b32 s3, vcc_lo
+8752	4	3213295625	s_delay_alu instid0(SALU_CYCLE_1)
+8756	4	2365784958	s_xor_b32 s3, exec_lo, s3
+8760	4	3215261712	s_cbranch_execz 16
+8764	4	838993696	v_lshrrev_b32_e32 v1, v32, v3
+8768	8	3591372802	v_bfe_u32 v2, v3, v32, 4
+8776	4	839272066	v_lshrrev_b32_e32 v3, 2, v35
+8780	4	839913602	v_lshrrev_b32_e32 v8, 2, v8
+8784	4	3213296020	s_delay_alu instid0(VALU_DEP_4) | instskip(NEXT) | instid1(VALU_DEP_3)
+8788	8	3591372801	v_bfe_u32 v1, v1, 4, 4
+8796	8	3596025859	v_and_or_b32 v3, v3, 48, v2
+8804	4	2114192132	v_mov_b32_e32 v2, v4
+8808	4	2115896068	v_mov_b32_e32 v15, v4
+8812	4	3213296148	s_delay_alu instid0(VALU_DEP_4) | instskip(NEXT) | instid1(VALU_DEP_4)
+8816	8	3596025857	v_and_or_b32 v1, v8, 48, v1
+8824	4	2115764995	v_mov_b32_e32 v14, v3
+8828	4	3196268547	s_and_not1_saveexec_b32 s3, s3
+8832	4	3215326988	s_cbranch_execz 65292
+8836	4	906367167	v_and_b32_e32 v3, 63, v8
+8840	8	3391357188	v_dual_mov_b32 v15, v4 :: v_dual_and_b32 v14, 63, v35
+8848	4	3213295618	s_delay_alu instid0(VALU_DEP_2)
+8852	8	3390046468	v_dual_mov_b32 v2, v4 :: v_dual_mov_b32 v1, v3
+8860	4	3214999301	s_branch 65285
+8864	4	2357069438	s_or_b32 exec_lo, exec_lo, s6
+8868	4	3213295625	s_delay_alu instid0(SALU_CYCLE_1)
+8872	4	2357070718	s_or_b32 exec_lo, exec_lo, s11
+8876	4	3213295625	s_delay_alu instid0(SALU_CYCLE_1)
+8880	4	2357070462	s_or_b32 exec_lo, exec_lo, s10
+8884	4	974397569	v_xor_b32_e32 v10, 1, v16
+8888	8	3372758815	v_dual_add_f32 v0, v31, v27 :: v_dual_add_f32 v1, v30, v25
+8896	8	3372756765	v_dual_add_f32 v2, v29, v23 :: v_dual_add_f32 v3, v28, v21
+8904	8	3372754714	v_dual_add_f32 v4, v26, v19 :: v_dual_add_f32 v5, v24, v18
+8912	4	101847828	v_add_f32_e32 v9, v20, v9
+8916	4	2090341536	v_cmp_gt_u32_e32 vcc_lo, 32, v10
+8920	4	3213296019	s_delay_alu instid0(VALU_DEP_3) | instskip(NEXT) | instid1(VALU_DEP_3)
+8924	8	3372747008	v_dual_add_f32 v0, v0, v4 :: v_dual_add_f32 v1, v1, v5
+8932	8	3373404931	v_dual_add_f32 v3, v3, v9 :: v_dual_cndmask_b32 v4, v16, v10
+8940	4	3213295761	s_delay_alu instid0(VALU_DEP_1) | instskip(NEXT) | instid1(VALU_DEP_1)
+8944	8	3372753686	v_dual_add_f32 v8, v22, v17 :: v_dual_add_f32 v1, v1, v3
+8952	4	100929794	v_add_f32_e32 v2, v2, v8
+8956	4	3213296145	s_delay_alu instid0(VALU_DEP_1) | instskip(NEXT) | instid1(VALU_DEP_4)
+8960	4	100664576	v_add_f32_e32 v0, v0, v2
+8964	4	805570690	v_lshlrev_b32_e32 v2, 2, v4
+8968	4	3213295794	s_delay_alu instid0(VALU_DEP_2) | instskip(SKIP_2) | instid1(VALU_DEP_1)
+8972	4	100664064	v_add_f32_e32 v0, v0, v1
+8976	8	3670802432	ds_bpermute_b32 v1, v2, v0
+8984	4	973348994	v_xor_b32_e32 v2, 2, v16
+8988	4	2090337440	v_cmp_gt_u32_e32 vcc_lo, 32, v2
+8992	4	33817872	v_cndmask_b32_e32 v2, v16, v2, vcc_lo
+8996	4	3213295825	s_delay_alu instid0(VALU_DEP_1) | instskip(SKIP_4) | instid1(VALU_DEP_1)
+9000	4	805569666	v_lshlrev_b32_e32 v2, 2, v2
+9004	4	3213491207	s_waitcnt lgkmcnt(0)
+9008	4	100664064	v_add_f32_e32 v0, v0, v1
+9012	8	3670802432	ds_bpermute_b32 v1, v2, v0
+9020	4	973348996	v_xor_b32_e32 v2, 4, v16
+9024	4	2090337440	v_cmp_gt_u32_e32 vcc_lo, 32, v2
+9028	4	33817872	v_cndmask_b32_e32 v2, v16, v2, vcc_lo
+9032	4	3213295825	s_delay_alu instid0(VALU_DEP_1) | instskip(SKIP_4) | instid1(VALU_DEP_1)
+9036	4	805569666	v_lshlrev_b32_e32 v2, 2, v2
+9040	4	3213491207	s_waitcnt lgkmcnt(0)
+9044	4	100664064	v_add_f32_e32 v0, v0, v1
+9048	8	3670802432	ds_bpermute_b32 v1, v2, v0
+9056	4	973349000	v_xor_b32_e32 v2, 8, v16
+9060	4	2090337440	v_cmp_gt_u32_e32 vcc_lo, 32, v2
+9064	4	33817872	v_cndmask_b32_e32 v2, v16, v2, vcc_lo
+9068	4	3213295825	s_delay_alu instid0(VALU_DEP_1) | instskip(SKIP_4) | instid1(VALU_DEP_1)
+9072	4	805569666	v_lshlrev_b32_e32 v2, 2, v2
+9076	4	3213491207	s_waitcnt lgkmcnt(0)
+9080	4	100664064	v_add_f32_e32 v0, v0, v1
+9084	8	3670802432	ds_bpermute_b32 v1, v2, v0
+9092	4	973349008	v_xor_b32_e32 v2, 16, v16
+9096	4	2090337440	v_cmp_gt_u32_e32 vcc_lo, 32, v2
+9100	4	33817872	v_cndmask_b32_e32 v2, v16, v2, vcc_lo
+9104	4	2090082432	v_cmp_eq_u32_e32 vcc_lo, 0, v16
+9108	4	3213295618	s_delay_alu instid0(VALU_DEP_2)
+9112	4	805569666	v_lshlrev_b32_e32 v2, 2, v2
+9116	4	3213491207	s_waitcnt lgkmcnt(0)
+9120	4	100664064	v_add_f32_e32 v0, v0, v1
+9124	8	3670802432	ds_bpermute_b32 v1, v2, v0
+9132	4	2340317822	s_and_b32 exec_lo, exec_lo, vcc_lo
+9136	4	3215261709	s_cbranch_execz 13
+9140	8	4093902848	s_load_b64 s[0:1], s[0:1], 0x10
+9148	8	3611033602	v_lshlrev_b64 v[2:3], 2, v[6:7]
+9156	4	3213491207	s_waitcnt lgkmcnt(0)
+9160	4	101188352	v_add_f32_e32 v4, v0, v1
+9164	4	3213295762	s_delay_alu instid0(VALU_DEP_2) | instskip(NEXT) | instid1(VALU_DEP_1)
+9168	8	3607128576	v_add_co_u32 v0, vcc_lo, s0, v2
+9176	8	3575675905	v_add_co_ci_u32_e64 v1, null, s1, v3, vcc_lo
+9184	8	3697934336	global_store_b32 v[0:1], v4, off
+9192	4	3215982592	s_endpgm
+9196	4	3214868480	s_code_end
+9200	4	3214868480	s_code_end
+9204	4	3214868480	s_code_end
+9208	4	3214868480	s_code_end
+9212	4	3214868480	s_code_end
+9216	4	3214868480	s_code_end
+9220	4	3214868480	s_code_end
+9224	4	3214868480	s_code_end
+9228	4	3214868480	s_code_end
+9232	4	3214868480	s_code_end
+9236	4	3214868480	s_code_end
+9240	4	3214868480	s_code_end
+9244	4	3214868480	s_code_end
+9248	4	3214868480	s_code_end
+9252	4	3214868480	s_code_end
+9256	4	3214868480	s_code_end
+9260	4	3214868480	s_code_end
+9264	4	3214868480	s_code_end
+9268	4	3214868480	s_code_end
+9272	4	3214868480	s_code_end
+9276	4	3214868480	s_code_end
+9280	4	3214868480	s_code_end
+9284	4	3214868480	s_code_end
+9288	4	3214868480	s_code_end
+9292	4	3214868480	s_code_end
+9296	4	3214868480	s_code_end
+9300	4	3214868480	s_code_end
+9304	4	3214868480	s_code_end
+9308	4	3214868480	s_code_end
+9312	4	3214868480	s_code_end
+9316	4	3214868480	s_code_end
+9320	4	3214868480	s_code_end
+9324	4	3214868480	s_code_end
+9328	4	3214868480	s_code_end
+9332	4	3214868480	s_code_end
+9336	4	3214868480	s_code_end
+9340	4	3214868480	s_code_end
+9344	4	3214868480	s_code_end
+9348	4	3214868480	s_code_end
+9352	4	3214868480	s_code_end
+9356	4	3214868480	s_code_end
+9360	4	3214868480	s_code_end
+9364	4	3214868480	s_code_end
+9368	4	3214868480	s_code_end
+9372	4	3214868480	s_code_end
+9376	4	3214868480	s_code_end
+9380	4	3214868480	s_code_end
+9384	4	3214868480	s_code_end
+9388	4	3214868480	s_code_end
+9392	4	3214868480	s_code_end
+9396	4	3214868480	s_code_end
+9400	4	3214868480	s_code_end
+9404	4	3214868480	s_code_end
+9408	4	3214868480	s_code_end
+9412	4	3214868480	s_code_end
+9416	4	3214868480	s_code_end
+9420	4	3214868480	s_code_end
+9424	4	3214868480	s_code_end
+9428	4	3214868480	s_code_end
+9432	4	3214868480	s_code_end
+9436	4	3214868480	s_code_end
+9440	4	3214868480	s_code_end
+9444	4	3214868480	s_code_end
+9448	4	3214868480	s_code_end
+9452	4	3214868480	s_code_end
+9456	4	3214868480	s_code_end
+9460	4	3214868480	s_code_end
+9464	4	3214868480	s_code_end
+9468	4	3214868480	s_code_end
+9472	4	3214868480	s_code_end
+9476	4	3214868480	s_code_end
+9480	4	3214868480	s_code_end
+9484	4	3214868480	s_code_end
+9488	4	3214868480	s_code_end
+9492	4	3214868480	s_code_end
+9496	4	3214868480	s_code_end
+9500	4	3214868480	s_code_end
+9504	4	3214868480	s_code_end
+9508	4	3214868480	s_code_end
+9512	4	3214868480	s_code_end
+9516	4	3214868480	s_code_end
+9520	4	3214868480	s_code_end
+9524	4	3214868480	s_code_end
+9528	4	3214868480	s_code_end
+9532	4	3214868480	s_code_end
+9536	4	3214868480	s_code_end
+9540	4	3214868480	s_code_end
+9544	4	3214868480	s_code_end
+9548	4	3214868480	s_code_end
+9552	4	3214868480	s_code_end
+9556	4	3214868480	s_code_end
+9560	4	3214868480	s_code_end
+9564	4	3214868480	s_code_end
+9568	4	3214868480	s_code_end
+9572	4	3214868480	s_code_end
+9576	4	3214868480	s_code_end
+9580	4	3214868480	s_code_end
+9584	4	3214868480	s_code_end
+9588	4	3214868480	s_code_end
+9592	4	3214868480	s_code_end
+9596	4	3214868480	s_code_end
