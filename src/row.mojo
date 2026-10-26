@@ -41,6 +41,8 @@ struct Analysis(Movable):
     var grand: Int
     var mismatches: Int
     var waves: Int
+    var first_mismatch: String  # where the walk first lost alignment: wave, pc, packet class, instruction
+    var open_waves: Int  # waves that started and never sent WAVEEND (trace buffer full, or cut short)
     var dir: String
     var tl_wave: List[Int]
     var tl_pc: List[Int]
@@ -54,6 +56,8 @@ struct Analysis(Movable):
         self.grand = 0
         self.mismatches = 0
         self.waves = 0
+        self.open_waves = 0
+        self.first_mismatch = ""
         self.dir = ""
         self.tl_wave = List[Int]()
         self.tl_pc = List[Int]()
@@ -109,7 +113,7 @@ def pad(s: String, w: Int) -> String:
 
 def lpad(s: String, w: Int) -> String:
     """Left aligned in w columns."""
-    return s + " " * max(0, w - s.byte_length())
+    return s + " " * max(1, w - s.byte_length())  # at least one space: a long name never runs into the next column
 
 
 def sgni(v: Int) -> String:

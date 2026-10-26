@@ -202,6 +202,45 @@ def top_cause(ref an: Analysis) raises -> String:
     return best if best != "" else "-"
 
 
+def app_one(args: List[String], tl_cap: Int, want_lines: Bool) raises -> Analysis:
+    """The full analysis of ONE dispatch of a run dir, picked by --dispatch N (its index) or --kernel NAME
+    (a kernel-name prefix that must pick exactly one dispatch), walked against its own code object."""
+    var rundir = args[2]
+    var want_n = -1
+    var want_k = ""
+    for i in range(len(args) - 1):
+        if args[i] == "--dispatch":
+            want_n = atol(args[i + 1], 10)
+        elif args[i] == "--kernel":
+            want_k = args[i + 1]
+    var picked = List[Int]()
+    var ds = dispatches(rundir)
+    for i in range(len(ds)):
+        if want_n >= 0 and dispatch_n(ds[i].key) != want_n:
+            continue
+        if want_k != "":
+            var nm = ds[i].name
+            if nm == "" and ds[i].objfile != "":
+                nm = pcmap_of(ds[i].objfile).symbol
+            if not nm.startswith(want_k):
+                continue
+        picked.append(i)
+    if len(picked) != 1:
+        print("FAIL app: " + String(len(picked)) + " dispatches match (want exactly 1; add --dispatch N)")
+        exit(1)
+    ref d = ds[picked[0]]
+    if d.objfile == "":
+        print("FAIL app: dispatch " + d.key + " has no code object in " + rundir)
+        exit(1)
+    var pm = pcmap_of(d.objfile)
+    var label = d.name if d.name != "" else pm.symbol
+    var paths = List[String]()
+    for p in d.atts.split("\n"):
+        if p:
+            paths.append(String(p))
+    return analyze_paths(paths^, pm^, label, tl_cap, d.objfile if want_lines else "", True)
+
+
 def app_main(args: List[String]) raises:
     """One summary row per dispatch of a rocprofv3 --att run dir (wavewait app RUNDIR)."""
     if len(args) < 3:
@@ -212,12 +251,13 @@ def app_main(args: List[String]) raises:
     if not len(ds):
         print("FAIL app: no dispatch in", rundir)
         exit(1)
-    print(lpad("kernel", 32) + pad("cycles", 9) + pad("waves", 7) + "  top cause")
+    print(lpad("kernel", 32) + pad("cycles", 9) + pad("waves", 7) + "  top cause" + "        open  mism  dispatch")
     var total = 0
     for d in ds:
         var an = analyze_dispatch(d, d.atts)
         total += an.grand
         var name = an.dir if an.dir != "" else "?"
-        print(lpad(name, 32) + pad(String(an.grand), 9) + pad(String(an.waves), 7) + "  " + top_cause(an))
+        var tc = top_cause(an)
+        print(lpad(name, 32) + pad(String(an.grand), 9) + pad(String(an.waves), 7) + "  " + tc + " " * max(1, 16 - tc.byte_length()) + pad(String(an.open_waves), 4) + pad(String(an.mismatches), 6) + "  " + String(dispatch_n(d.key)))
     print("")
     print(String(len(ds)), "dispatches,", String(total), "cycles")

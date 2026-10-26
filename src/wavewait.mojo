@@ -12,10 +12,11 @@ from std.os import getenv
 from std.python import Python
 from row import Analysis, Row, fmt1, fmt1x10, jstr, lpad, pad, pcs_of, sgn10, tenths
 from trace import TL_CAP, analyze
-from app import app_main
+from app import app_main, app_one
 from diff import diff_json, diff_rows
 from hints import print_hints
 from html import write_html
+from loops import print_loops
 from lines import LineMap, load_dwarf
 
 
@@ -47,6 +48,10 @@ def print_table(ref an: Analysis, top: Int, causes: Bool) raises:
         print(row + r.text)
     if an.mismatches:
         print("WARN", an.mismatches, "packets matched no instruction class (alignment suspect)")
+        if an.first_mismatch != "":
+            print("WARN first: " + an.first_mismatch)
+    if an.open_waves:
+        print("WARN", an.open_waves, "of", an.waves, "waves never ended: the trace stops early (ATT buffer full?), the totals cover only what it holds")
     # stable insertion sort by average, descending: ties keep first-seen order
     var ranked = List[Row]()
     for r in an.rows:
@@ -197,6 +202,11 @@ def main() raises:
         diff_main(args)
         return
     if cmd == "app":
+        if opt(args, "--dispatch", "") != "" or opt(args, "--kernel", "") != "":
+            var html_a = opt(args, "--html", "")
+            var an_a = app_one(args, TL_CAP if html_a != "" else 0, flag(args, "--by-line") or flag(args, "--json"))
+            emit(an_a, args)
+            return
         app_main(args)
         return
     if cmd == "budget":
@@ -214,16 +224,23 @@ def main() raises:
     var kernel = opt(args, "--kernel", "hsaco")
     if dir.endswith(".pkl"):
         dir = unpack(dir, kernel)
+    # the source positions only cost a dwarfdump child when the output shows them
+    var want_lines = flag(args, "--by-line") or flag(args, "--json")
+    var an = analyze(dir, TL_CAP if opt(args, "--html", "") != "" else 0, dir + "/codeobj.out" if want_lines else "")
+    emit(an, args)
+
+
+def emit(ref an: Analysis, args: List[String]) raises:
+    """The output the flags ask for, from one analysed capture (a capture dir or one app dispatch)."""
     var top = 10
     if flag(args, "--top"):
         top = atol(opt(args, "--top", "10"), 10)
     var causes = flag(args, "--causes")
-    # the source positions only cost a dwarfdump child when the output shows them
-    var want_lines = flag(args, "--by-line") or flag(args, "--json")
     var html = opt(args, "--html", "")
-    var an = analyze(dir, TL_CAP if html != "" else 0, dir + "/codeobj.out" if want_lines else "")
     if html != "":
         write_html(an, html)
+    elif flag(args, "--loops"):
+        print_loops(an, top)
     elif flag(args, "--hints"):
         print_hints(an)
     elif flag(args, "--by-line"):

@@ -10,7 +10,9 @@ rows=$(grep -cE '^0x[0-9a-f]+ +[0-9.]+ +[0-9]+ +4 ' <<<"$out")
 grep -qE '^0x19bc .* global_store_b32' <<<"$out" && ! grep -q 's_endpgm' <<<"$out" || { echo "FAIL walk: last traced instruction is not the store (s_endpgm emits no packet)"; exit 1; }
 grep -A1 '^top 3' <<<"$out" | grep -q '884.2  s_clause' || { echo "FAIL top: wave start not on the traced s_clause"; exit 1; }
 mkdir -p build
-mojo build -I src src/wavewait.mojo -o build/wavewait >/dev/null || { echo "FAIL mojo: build"; exit 1; }
+rtlib=$(find "$(dirname "$(readlink -f "$(command -v mojo)")")/.." -name libKGENCompilerRTShared.so -print -quit)
+[ -n "$rtlib" ] || { echo "FAIL mojo: runtime lib not found next to $(command -v mojo)"; exit 1; }
+mojo build -I src src/wavewait.mojo -Xlinker -rpath -Xlinker "$(dirname "$rtlib")" -o build/wavewait >/dev/null || { echo "FAIL mojo: build"; exit 1; }
 diff <(./build/wavewait fixtures/saxpy_cu --top 3) <(echo "$out") >/dev/null || { echo "FAIL mojo: table differs from fixtures/golden/saxpy_cu.top3.txt"; exit 1; }
 # --causes only moves cycles onto the waits: the per-cause sum equals the raw total (12897 on saxpy)
 raw=$(./build/wavewait fixtures/saxpy_cu --top 0 | awk '/^ *0x/{t+=$2*$4} END{printf "%.0f", t}')
@@ -97,6 +99,29 @@ k=$(mktemp -d); tools/from-att.sh fixtures/app "$k" >/dev/null || { echo "FAIL a
 tab=$(./build/wavewait "$k" --top 0 | awk '/^ *0x/{t+=$2*$4} END{printf "%.0f", t}'); rm -rf "$k"
 row=$(awk '$1=="saxpy"{print $2}' <<<"$app")
 [ "$row" = "$tab" ] && [ "$row" -gt 0 ] || { echo "FAIL app: saxpy row $row cycles, per-kernel table $tab"; exit 1; }
+# app --kernel / --dispatch: the full table of ONE dispatch, walked against its own code object, equals its app row;
+# a selector that matches nothing fails
+one=$(./build/wavewait app fixtures/app --kernel saxpy --json | awk -F'[:,]' '/"grand"/{print $2+0}')
+[ "$one" = "$row" ] || { echo "FAIL app one: --kernel saxpy grand '$one', app row $row"; exit 1; }
+n=$(awk '$1=="saxpy"{print $NF}' <<<"$app")
+one=$(./build/wavewait app fixtures/app --dispatch "$n" --json | awk -F'[:,]' '/"grand"/{print $2+0}')
+[ "$one" = "$row" ] || { echo "FAIL app one: --dispatch $n grand '$one', app row $row"; exit 1; }
+./build/wavewait app fixtures/app --dispatch 999999 >/dev/null && { echo "FAIL app one: a dispatch that does not exist accepted"; exit 1; }
+# a trace cut at a quarter (ATT buffer full; saxpy ends inside the first half) says so: waves that never ended are counted, not silently dropped
+k=$(mktemp -d); cp fixtures/saxpy_cu/pcmap.tsv "$k"/; for b in fixtures/saxpy_cu/blob_*.bin; do head -c $(( $(stat -c %s "$b") / 4 )) "$b" > "$k/$(basename "$b")"; done
+./build/wavewait "$k" --top 0 | grep -q '^WARN [0-9]* of [0-9]* waves never ended' || { echo "FAIL open waves: a quarter trace gives no WARN"; rm -rf "$k"; exit 1; }
+rm -rf "$k"
+./build/wavewait fixtures/saxpy_cu --top 0 | grep -q 'never ended' && { echo "FAIL open waves: WARN on a complete trace"; exit 1; }
+# a persistent kernel's grid barrier (mojo-baro megakernel, a 256 KB prefix of its ATT): buffer_gl1_inv / buffer_gl0_inv
+# report as INST ops 0x2f-0x36 (BUF); classed as VALU they desynced the walk (1504 mismatches, a false "issue wait")
+row=$(./build/wavewait app fixtures/app_mega | awk '$1 ~ /^mega_amar_mega_token/')
+[ "$(awk '{print $(NF-1)}' <<<"$row")" = 0 ] || { echo "FAIL buf ops: megakernel walk mismatches: $row"; exit 1; }
+[ "$(awk '{print $(NF-2)}' <<<"$row")" = 4 ] || { echo "FAIL open waves: the 256 KB prefix should leave 4 waves open: $row"; exit 1; }
+# --loops: every charged cycle lands in exactly one innermost loop or outside all of them
+lp=$(./build/wavewait app fixtures/app_mega --kernel mega --loops --top 1000)
+sum=$(awk '/^ *[0-9]+ +[0-9]+ /{t+=$1} END{print t}' <<<"$lp"); grand=$(awk '/ loops; /{print $NF}' <<<"$lp")
+[ "$sum" = "$grand" ] && [ "$grand" -gt 0 ] || { echo "FAIL loops: loops + outside = $sum, table total $grand"; exit 1; }
+grep -q ' loop ' <<<"$lp" || { echo "FAIL loops: no loop found in the megakernel prefix"; exit 1; }
 # a branchy kernel (a Mojo Q4_K GEMV): the code map app mode builds in Mojo equals tools/export.py's on the
 # branch lines too, so the row matches the per-kernel table, and the row is named by the symbol, not an instruction
 app=$(./build/wavewait app fixtures/app_gemv) || { echo "FAIL app gemv: exit $?"; exit 1; }
@@ -123,4 +148,4 @@ rm -f "$tight"
 page=$(mktemp --suffix=.html); ./build/wavewait fixtures/saxpy_cu --html "$page" >/dev/null || { echo "FAIL html: exit $?"; exit 1; }
 counts=$(python3 -c "import json,sys; t=open(sys.argv[1]).read(); d=json.loads(t.split('const D=',1)[1].split(';\nconst pal',1)[0]); l=[x for x in d['lanes'] if x]; print(len(l), sum(map(len,l)), len(d['rows']))" "$page"); rm -f "$page"
 [ "$counts" = "4 112 28" ] || { echo "FAIL html: lanes bars rows = $counts, want 4 112 28"; exit 1; }
-echo "ok wavewait: 28 instructions x 4 waves, aligned to the store, mojo == golden, causes conserve 12897 cycles, diff aligns 28/28 and flags 1 removed row, json round-trips 28 rows, every traced pc maps to a DWARF line (addr2line agrees), the probe fires all 4 hint rules and the saxpy hints match the golden, app mode ranks 2 kernels and agrees with the per-kernel table (saxpy and a branchy GEMV), a 48-wave GEMV walks every pc as often as tinygrad does, the budget gate passes its own numbers and fails -10%, the timeline page holds 4 lanes x 28 bars"
+echo "ok wavewait: 28 instructions x 4 waves, aligned to the store, mojo == golden, causes conserve 12897 cycles, diff aligns 28/28 and flags 1 removed row, json round-trips 28 rows, every traced pc maps to a DWARF line (addr2line agrees), the probe fires all 4 hint rules and the saxpy hints match the golden, app mode ranks 2 kernels and agrees with the per-kernel table (saxpy and a branchy GEMV), a 48-wave GEMV walks every pc as often as tinygrad does, the budget gate passes its own numbers and fails -10%, the timeline page holds 4 lanes x 28 bars, app --kernel/--dispatch equal the app row, a cut trace warns about open waves, the megakernel barrier walks with 0 mismatches, --loops conserves the cycles"

@@ -2,7 +2,7 @@
 # row record (src/row.mojo). Every output (table, json, by-line, hints, diff, app, budget) reads
 # that record; this module only produces it.
 from std.collections import Dict, List
-from std.os import stat
+from std.os import stat, getenv
 from std.os.path import exists
 from std.sys import exit
 from std import subprocess
@@ -184,7 +184,7 @@ def pclass(kind: Int, op: Int) -> String:
             return "m"
         if op == 0x13:
             return "r"
-        if op >= 0x1C and op <= 0x2E:
+        if op >= 0x1C and op <= 0x36:  # FLAT, GLOBAL, LDS, then BUF 0x2f-0x36 (buffer_gl*_inv of every grid barrier)
             return "g"
         return "v"  # VALU reported as INST: transcendental, 64-bit, cmpx
     return "i" if kind >= 5 else "v"  # IMMEDIATE, IMMEDIATE_MASK / VALUINST
@@ -317,6 +317,8 @@ def analyze_paths(paths: List[String], pm: Pcmap, label: String, tl_cap: Int, co
     an.dir = label
     var tl_lane = Dict[Int, Int]()  # wave -> timeline lane (-1: past the cap)
     var tl_last = Dict[Int, Int]()  # wave -> index of its last timeline entry
+    var dump_w = atol(getenv("WAVEWAIT_PACKETS", "-1"), 10)  # debug: print this wave's packets and the pc each lands on
+    var dumped = 0
     for path in paths:
         var p = Decoder(open(path, "r").read_bytes(stat(path).st_size))  # unsized read_bytes() peaks at ~5x the file
         var has_inst = False  # pass 1: skip blobs without instruction packets
@@ -379,9 +381,15 @@ def analyze_paths(paths: List[String], pm: Pcmap, label: String, tl_cap: Int, co
                             bb += pm.size[bb]
                     if not found and not fits(c, pm.text[a]):
                         mismatches += 1
-                    if pm.text[a].startswith("s_code_end"):
-                        print("FAIL walk: wave", w, "ran past s_endpgm")
-                        exit(1)
+                        if an.first_mismatch == "":
+                            an.first_mismatch = "wave " + String(w) + " pc " + hex(a) + " packet class '" + c + "' op " + hex(opv) + " at instruction: " + pm.text[a]
+                    if pm.text[a].startswith("s_code_end"):  # packet after s_endpgm (late immediate, slot reuse): drop the wave
+                        mismatches += 1
+                        _ = pc.pop(w)
+                        continue
+                    if w == dump_w and dumped < 400:
+                        dumped += 1
+                        print("PKT t=" + String(p.time) + " kind " + String(p.kind) + " op " + hex(opv) + " class " + c + (" ok " if found else " MISS ") + hex(a) + " " + pm.text[a])
                     start = a if start < 0 else start
                     var d = p.time - last[w]
                     var ch = d  # charged delta: the wait keeps the cycles it held
@@ -408,6 +416,7 @@ def analyze_paths(paths: List[String], pm: Pcmap, label: String, tl_cap: Int, co
                         pc[w] = a + pm.size[a]
             elif p.kind == WAVEEND and p.unit() == TRACED_CU * 4 and w in pc:
                 _ = pc.pop(w)
+        an.open_waves += len(pc)
     if not tab.order:
         if strict:
             print("FAIL trace: no instruction packets for the traced SIMD (capture with SQTT_WGP_PROBE=3)")

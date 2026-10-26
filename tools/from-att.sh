@@ -9,6 +9,8 @@ mkdir -p "$out"
 n=0
 for f in "$run"/*/*_shader_engine_*.att; do [ -s "$f" ] || continue; cp "$f" "$out/blob_$n.bin"; n=$((n + 1)); done
 [ "$n" -gt 0 ] || { echo "FAIL att: no .att files under $run"; exit 1; }
+nd=$(ls "$run"/*/*_shader_engine_*.att | sed -E 's/.*_([0-9]+)\.att$/\1/' | sort -u | wc -l)
+[ "$nd" -le 1 ] || echo "WARN from-att: $nd dispatches merged into one table against one code object; use: wavewait app $run --dispatch N" >&2
 obj=$(ls "$run"/*/*_code_object_id_"$co".out 2>/dev/null | head -1)
 [ -n "$obj" ] || { echo "FAIL code object: no *_code_object_id_$co.out under $run"; exit 1; }
 python3 -c "import sys; sys.path.insert(0, '$here'); from export import pc_map

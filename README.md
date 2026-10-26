@@ -68,6 +68,9 @@ launch traces nothing: it runs on whichever CU the dispatcher picks.
 | `wavewait DIR --by-line` | costs per source line (DWARF, build with `-g`) | every pc mapped, addr2line agrees |
 | `wavewait DIR --hints` | fix hints from the measured gfx1100 timing (hoist, empty wait, VOPD, LDS bank) | probe fires all 4, saxpy golden |
 | `wavewait app RUNDIR` | every dispatch of a rocprofv3 ATT run, one row per kernel | 2 kernels, saxpy row = its table (38342) |
+| `wavewait app RUNDIR --dispatch N` / `--kernel NAME` | the full table (and every flag below) of ONE dispatch, walked against its own code object | equals its app row |
+| `wavewait DIR --loops` | charged cycles per innermost loop (backward branch), poll loops flagged `spin` | cycles conserved on the megakernel fixture |
+| `WAVEWAIT_PACKETS=W wavewait ...` | debug: wave W's first 400 packets, the pc each lands on, MISS where the walk lost alignment | - |
 | `wavewait budget FILE DIR` | `cycles N` / `cause NAME PCT` rules, exit 1 naming each broken rule | own numbers pass, -1 cycle and -10% fail |
 | `wavewait DIR --html OUT` | self-contained per-wave timeline page | 4 lanes x 112 bars |
 | `wavewait sim` | blocked: needs the per-SIMD scheduler (`docs/W7-blocked.md`) | exits 2 |
