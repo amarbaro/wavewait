@@ -9,17 +9,23 @@ from row import Analysis, lpad, pad
 from trace import Pcmap, analyze_paths, pcmap_of
 
 
-struct Dispatch(ImplicitlyCopyable):
+struct Dispatch(Copyable):
     var key: String  # the "agent_index" key of the dispatch
     var objfile: String  # its code object ("" when the capture names none)
     var name: String  # the kernel name
+    var entry: Int  # the kernel's first pc in its code object, -1 when the capture names none
     var atts: String  # its raw SQTT files, one path per line
+    var simd: Int  # the SIMD AMD's decoder found the waves on (filenames.json), -1 when unknown
+    var starts: List[Int]  # and its waves, slot << 40 | start time: the trace also holds other dispatches' waves
 
     def __init__(out self):
         self.key = ""
         self.objfile = ""
         self.name = ""
+        self.entry = -1
         self.atts = ""
+        self.simd = -1
+        self.starts = List[Int]()
 
 
 def att_key(name: String) -> String:
@@ -85,36 +91,40 @@ def json_fields(text: String, start: Int) -> List[String]:
     return out^
 
 
-def code_json(path: String) raises -> Tuple[String, Int]:
-    """The kernel name and the code object id of a rocprofv3 code.json ("" and 0 when it has no code)."""
+def code_json(path: String) raises -> Tuple[String, Int, Int]:
+    """The kernel name, the code object id and the entry pc of a rocprofv3 code.json ("", 0 and -1 when it has no code).
+    The entry is the label row's address: a torch code object holds hundreds of kernels, the dispatch ran only this one."""
     var text = open(path, "r").read()
     var i = text.find("\"code\":")
     if i < 0:
-        return ("", 0)
+        return ("", 0, -1)
     i += 7
     while i < text.byte_length() and text[byte=i:i + 1] == " ":
         i += 1
     if text[byte=i:i + 4] == "null":
-        return ("", 0)
+        return ("", 0, -1)
     var arr = text.find("[", i)
     if arr < 0:
-        return ("", 0)
+        return ("", 0, -1)
     var row = text.find("[", arr + 1)  # the first instruction row of the array
     if row < 0:
-        return ("", 0)
+        return ("", 0, -1)
     var f = json_fields(text, row)
     if len(f) < 5:
-        return ("", 0)
+        return ("", 0, -1)
     var name = String(String(f[0]).strip())
     if name.startswith("\""):
         var quoted = String(name[byte=1:name.byte_length() - 1])
         name = quoted
+    var entry = -1
     if name.startswith("; "):  # the label row; without it the first row is an instruction, not a name
         var label = String(name[byte=2:])
         name = label
+        if len(f) > 5:
+            entry = atol(String(String(f[5]).strip()), 10)
     else:
         name = ""
-    return (name, atol(String(String(f[4]).strip()), 10))
+    return (name, atol(String(String(f[4]).strip()), 10), entry)
 
 
 def dispatches(rundir: String) raises -> List[Dispatch]:
@@ -123,13 +133,14 @@ def dispatches(rundir: String) raises -> List[Dispatch]:
     var dirs = Dict[String, String]()  # the key -> the dispatch directory
     var objs = Dict[Int, String]()  # the code object id -> its file
     var order = List[String]()
+    var scan: List[String] = [rundir]  # the traces sit in a host subdir, or in the run dir itself (rocprofv3 -o NAME)
     for entry in listdir(rundir):
         var path = rundir + "/" + String(entry)
         if entry.find("ui_output_agent_") == 0:
             dirs[dir_key(entry)] = path
-            continue
-        if not isdir(path):
-            continue
+        elif isdir(path):
+            scan.append(path)
+    for path in scan:
         for f in listdir(path):
             var name = String(f)
             if name.endswith(".att"):
@@ -154,12 +165,28 @@ def dispatches(rundir: String) raises -> List[Dispatch]:
         if dirpath != "" and exists(dirpath + "/code.json"):
             var info = code_json(dirpath + "/code.json")
             d.name = info[0]
+            d.entry = info[2]
             var cid = info[1]
             if cid != 0 and cid in objs:
                 d.objfile = objs[cid]
                 claimed[cid] = True
         d.atts = atts.get(key, "")
-        ds.append(d)
+        if dirpath != "" and exists(dirpath + "/filenames.json"):  # "wave_filenames":{"<se>":{"<simd>":{...
+            var t = open(dirpath + "/filenames.json", "r").read()
+            var at = t.find("\"wave_filenames\":{\"")
+            if at >= 0:
+                var q = t.find("\":{\"", at + 19)
+                var e = t.find("\"", q + 4)
+                if q > 0 and e > q:
+                    d.simd = atol(t[byte=q + 4 : e])
+            var sl = t.find("_sl")  # ..._sl<slot>_wv0.json",<begin>,<end>]
+            while sl >= 0:
+                var u = t.find("_", sl + 3)
+                var c = t.find(",", u)
+                var c2 = t.find(",", c + 1)
+                d.starts.append(atol(t[byte=sl + 3 : u]) << 40 | atol(t[byte=c + 1 : c2]))
+                sl = t.find("_sl", c2)
+        ds.append(d^)
     # the code objects no dispatch claimed belong to the dispatches whose capture has no code
     # (the runtime's own kernels): hand them out in dispatch order
     var free = List[Int]()
@@ -187,7 +214,7 @@ def analyze_dispatch(ref d: Dispatch, atts: String) raises -> Analysis:
     for p in atts.split("\n"):
         if p:
             paths.append(String(p))
-    var an = analyze_paths(paths^, pm^, label, 0, "", False)
+    var an = analyze_paths(paths^, pm^, label, 0, "", False, d.simd, d.starts, d.entry)
     return an^
 
 
@@ -203,9 +230,7 @@ def top_cause(ref an: Analysis) raises -> String:
 
 
 def app_one(args: List[String], tl_cap: Int, want_lines: Bool) raises -> Analysis:
-    """The full analysis of ONE dispatch of a run dir, picked by --dispatch N (its index) or --kernel NAME
-    (a kernel-name prefix that must pick exactly one dispatch), walked against its own code object."""
-    var rundir = args[2]
+    """The full analysis of ONE dispatch of the run dir args[2], picked by --dispatch N / --kernel NAME."""
     var want_n = -1
     var want_k = ""
     for i in range(len(args) - 1):
@@ -213,6 +238,12 @@ def app_one(args: List[String], tl_cap: Int, want_lines: Bool) raises -> Analysi
             want_n = atol(args[i + 1], 10)
         elif args[i] == "--kernel":
             want_k = args[i + 1]
+    return app_pick(args[2], want_n, want_k, tl_cap, want_lines)
+
+
+def app_pick(rundir: String, want_n: Int, want_k: String, tl_cap: Int, want_lines: Bool) raises -> Analysis:
+    """The full analysis of ONE dispatch of a run dir, picked by its index (want_n, -1 = any) or a kernel-name
+    prefix (want_k, "" = any) that must pick exactly one dispatch, walked against its own code object."""
     var picked = List[Int]()
     var ds = dispatches(rundir)
     for i in range(len(ds)):
@@ -238,7 +269,9 @@ def app_one(args: List[String], tl_cap: Int, want_lines: Bool) raises -> Analysi
     for p in d.atts.split("\n"):
         if p:
             paths.append(String(p))
-    return analyze_paths(paths^, pm^, label, tl_cap, d.objfile if want_lines else "", True)
+    var an = analyze_paths(paths^, pm^, label, tl_cap, d.objfile if want_lines else "", True, d.simd, d.starts, d.entry)
+    an.codeobj = d.objfile
+    return an^
 
 
 def app_main(args: List[String]) raises:

@@ -5,6 +5,8 @@
 # the charged average, the way the retired Python analyzer labelled it.
 from std.collections import Dict, List
 
+comptime XL = 720720  # exposed-cycle unit: lcm(1..16), so an idle cycle shared by k <= 16 waves splits exactly
+
 struct Row(ImplicitlyCopyable):
     var pc: Int
     var size: Int
@@ -17,6 +19,9 @@ struct Row(ImplicitlyCopyable):
     var cause: String
     var line: Int
     var file: String  # the DWARF source file, "" when the capture has no debug info
+    var bmin: Int  # a taken branch: min / max times one wave took it (-1: never taken); they differ when the waves
+    var bmax: Int  # disagree on the path (wave-level divergence; lane-level EXEC is not in the trace)
+    var xsum: Int  # exposed: SIMD idle cycles this instruction cost, shared among the waves waiting then (XL units)
 
     def __init__(out self, pc: Int, size: Int, text: String):
         self.pc = pc
@@ -30,6 +35,9 @@ struct Row(ImplicitlyCopyable):
         self.cause = ""
         self.line = 0
         self.file = ""
+        self.xsum = 0
+        self.bmin = -1
+        self.bmax = -1
 
 
 # One analysed capture: the rows, the cause totals, and the per-wave timeline (the first
@@ -48,6 +56,14 @@ struct Analysis(Movable):
     var tl_pc: List[Int]
     var tl_cyc: List[Int]
     var lanes: Int
+    var idle: Int  # cycles the traced SIMD issued nothing while a wave was alive
+    var xgrand: Int  # the rows' exposed cycles, XL units; xgrand + xtail == idle * XL
+    var xtail: Int  # idle after a wave's last traced issue, XL units
+    var occ: Int  # wave-cycles: alive waves summed over the span
+    var span: Int
+    var occ_max: Int
+    var kernel: String  # the kernel symbol and the code object it came from ("" when the capture has none)
+    var codeobj: String
 
     def __init__(out self):
         self.rows = List[Row]()
@@ -63,6 +79,14 @@ struct Analysis(Movable):
         self.tl_pc = List[Int]()
         self.tl_cyc = List[Int]()
         self.lanes = 0
+        self.idle = 0
+        self.xgrand = 0
+        self.xtail = 0
+        self.occ = 0
+        self.span = 0
+        self.occ_max = 0
+        self.kernel = ""
+        self.codeobj = ""
 
     def row_of(self, pc: Int) -> Int:
         """Index of the row with that pc, or -1."""
@@ -105,6 +129,11 @@ def fmt1x10(v: Int) -> String:
 def sgn10(v: Int) -> String:
     """A signed tenths value: "+495.6" / "-673.5" / "0.0"."""
     return "+" + fmt1x10(v) if v > 0 else fmt1x10(v)
+
+
+def xcyc(x: Int) -> Int:
+    """XL units to whole cycles, rounded."""
+    return (x + XL // 2) // XL
 
 
 def pad(s: String, w: Int) -> String:

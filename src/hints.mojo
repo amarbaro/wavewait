@@ -1,6 +1,6 @@
 # The optimisation hints of a capture: the rules table (data) applied in one loop over the row
 # record. Every rule names the penalty it costs, taken from the rdna3-sqtt-emu timing table
-# (the VALU/LDS/memory rows).
+# (~/Projects/AMD/docs/sqtt/web/rdna3-timing-excerpts.md, the VALU/LDS/memory rows).
 from std.collections import Dict, List
 from row import Analysis, Row, fmt1x10, lpad, pad, tenths
 
@@ -44,6 +44,7 @@ def rules() -> List[Rule]:
         Rule("idle wait", "+4 (a scalar op: exec = issue + 4)"),
         Rule("vopd", "1 cycle per pair (a VOPD slot carries two 32-bit VALU ops)"),
         Rule("lds bank", "+1 cycle per conflict group (32 banks of 32 bit)"),
+        Rule("divergent", "the slowest wave's path: the waves took this branch a different number of times"),
     ]
 
 
@@ -189,6 +190,9 @@ def hints(ref an: Analysis) raises -> List[Hint]:
             if st >= 8:
                 var lanes = min(32, st // 4)
                 out.append(Hint(r.pc, rl[3].name, tenths(r.csum, r.waves), rl[3].penalty, t + " (stride " + String(st) + " B: " + String(lanes) + " lanes per bank)"))
+        # divergent: the waves disagree on how often they took the branch
+        if r.bmin != r.bmax:
+            out.append(Hint(r.pc, rl[4].name, tenths(r.csum, r.waves), rl[4].penalty, t + " (taken " + String(r.bmin) + ".." + String(r.bmax) + " times per wave)"))
         # the waits: the exposure of the loads in flight, and the idle check
         if t.startswith("s_waitcnt") and not t.startswith("s_waitcnt_depctr"):
             var v0 = len(vmem)
