@@ -3,6 +3,10 @@
 # and the Mojo analyzer prints the frozen table (fixtures/golden, from the retired Python analyzer) byte for byte.
 set -euo pipefail
 cd "$(dirname "$0")"
+# one receipt per tree and Mojo: the same check never runs twice
+sha=$( { git ls-files -s; git diff HEAD; mojo --version; } | sha256sum | cut -d' ' -f1)
+[ "$(cat .work/check.ok 2>/dev/null)" = "$sha" ] && { echo "ok wavewait: receipt $sha"; exit 0; }
+TMPDIR=$(mktemp -d); export TMPDIR; trap 'rm -rf "$TMPDIR"' EXIT  # every mktemp below dies with the run
 TG=${TINYGRAD:-$HOME/Projects/AMD/tinygrad}
 out=$(cat fixtures/golden/saxpy_cu.top3.txt)
 rows=$(grep -cE '^0x[0-9a-f]+ +[0-9.]+ +[0-9]+ +4 ' <<<"$out")
@@ -307,4 +311,19 @@ ATT_NO_GPU_WAIT=1 ATT_ROCPROF="$afi/fake-ok" ATT_DECODER_DIR="$afi/dec" tools/at
 PATH="$PWD/$afi/bin:$PATH" ATT_EXTRA="--preload marker.so" ATT_SLIM=1 ATT_ROCPROF="$afi/fake-ok" ATT_DECODER_DIR="$afi/dec" tools/att-capture.sh "$afi/fwd" -- true > /dev/null 2>&1 || { echo "FAIL att-capture: a capture through gpu-wait failed"; exit 1; }
 grep -q -- '--preload marker.so' "$afi/args" || { echo "FAIL att-capture: ATT_EXTRA did not cross gpu-wait"; exit 1; }
 [ ! -e "$afi/fwd/dispatch_0/se0_sm0_sl0_wv0.json" ] && [ -e "$afi/fwd/dispatch_0/code.json" ] || { echo "FAIL att-capture: ATT_SLIM kept the per-wave JSON or lost code.json"; exit 1; }
-echo "ok wavewait: 28 instructions x 4 waves, aligned to the store, mojo == golden, causes conserve 12897 cycles, diff aligns 28/28 and flags 1 removed row, json round-trips 28 rows, every traced pc maps to a DWARF line (addr2line agrees), the probe fires all 4 hint rules and the saxpy hints match the golden, app mode ranks 2 kernels and agrees with the per-kernel table (saxpy and a branchy GEMV), a 48-wave GEMV walks every pc as often as tinygrad does, the budget gate passes its own numbers and fails -10%, the timeline page holds 4 lanes x 28 bars, app --kernel/--dispatch equal the app row, a cut trace warns about open waves, the megakernel barrier walks with 0 mismatches, --loops conserves the cycles, --top N cuts the app and --causes tables to N rows, --by-class conserves 12897 cycles and counts the issues as awk does, diff takes two app run dirs and its linear-memory alignment equals the table, att-capture turns the ATT failure into a kill within 5 s and refuses a 1 GB buffer"
+# a desynced walk gives no result: the wrong code map (every load and store renamed to a nop) exits 3 on table and diff, --allow-mism shows it
+ds=$(mktemp -d); cp fixtures/saxpy_cu/* "$ds/"; sed -i -E 's/\t(s_load|global_store|s_buffer)[^\t]*$/\ts_nop 0/' "$ds/pcmap.tsv"
+rc=0; o=$(./build/wavewait "$ds" --top 3) || rc=$?; [ "$rc" = 3 ] && grep -q '^FAIL walk: ' <<<"$o" && ! grep -q '^0x' <<<"$o" || { echo "FAIL refuse: table of a desynced walk printed, exit $rc"; exit 1; }
+rc=0; ./build/wavewait diff fixtures/saxpy_cu "$ds" >/dev/null || rc=$?; [ "$rc" = 3 ] || { echo "FAIL refuse: diff took a desynced walk, exit $rc"; exit 1; }
+./build/wavewait "$ds" --allow-mism --top 3 | grep -q '^WARN .*alignment suspect' || { echo "FAIL refuse: --allow-mism shows no table"; exit 1; }
+printf 'cycles 1\n' > "$ds/b"; rc=0; ./build/wavewait budget "$ds/b" "$ds" >/dev/null || rc=$?; [ "$rc" = 3 ] || { echo "FAIL refuse: budget took a desynced walk, exit $rc"; exit 1; }
+rm -rf "$ds"
+# no code object id in code.json: the object is the one holding its rows with an aligned walk, not the next free one (lowest id here is a rmsnorm object)
+nz=$(mktemp -d); cp -r fixtures/app_noid/. "$nz/"; find "$nz" -name '*.gz' -exec gunzip {} +
+./build/wavewait app "$nz" | grep -qE '^gemv_kq_.*\(1of2\) +1105904 +22 ' || { echo "FAIL noid: dispatch 225 lost its code object"; exit 1; }
+# an id that names the wrong object: every row printed, then exit 3
+sed -i 's/",0,\([0-9]*\),"",0,/",0,\1,"",3,/g' "$nz"/ui_output_*/code.json
+rc=0; o=$(./build/wavewait app "$nz") || rc=$?; [ "$rc" = 3 ] && grep -q '^FAIL walk: 1 dispatches' <<<"$o" || { echo "FAIL refuse: app took a desynced walk, exit $rc"; exit 1; }
+rm -rf "$nz"
+echo "ok wavewait: 28 instructions x 4 waves, aligned to the store, mojo == golden, causes conserve 12897 cycles, diff aligns 28/28 and flags 1 removed row, json round-trips 28 rows, every traced pc maps to a DWARF line (addr2line agrees), the probe fires all 4 hint rules and the saxpy hints match the golden, app mode ranks 2 kernels and agrees with the per-kernel table (saxpy and a branchy GEMV), a 48-wave GEMV walks every pc as often as tinygrad does, the budget gate passes its own numbers and fails -10%, the timeline page holds 4 lanes x 28 bars, app --kernel/--dispatch equal the app row, a cut trace warns about open waves, the megakernel barrier walks with 0 mismatches, --loops conserves the cycles, --top N cuts the app and --causes tables to N rows, --by-class conserves 12897 cycles and counts the issues as awk does, diff takes two app run dirs and its linear-memory alignment equals the table, att-capture turns the ATT failure into a kill within 5 s and refuses a 1 GB buffer, a desynced walk exits 3"
+mkdir -p .work; echo "$sha" > .work/check.ok

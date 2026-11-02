@@ -12,7 +12,7 @@ from std.os import getenv
 from std.python import Python
 from row import XL, Analysis, Row, fmt1, fmt1x10, jstr, lpad, pad, pcs_of, sgn10, tenths, xcyc
 from trace import TL_CAP, analyze, occupancy
-from app import app_main, app_one, app_pick
+from app import refuse, app_main, app_one, app_pick
 from diff import diff_json, diff_rows
 from rank import rank_main
 from hints import print_hints
@@ -201,6 +201,8 @@ def diff_main(args: List[String]) raises:
     else:
         a = analyze(args[2], 0)
         b = analyze(args[3], 0)
+    refuse(a, args)
+    refuse(b, args)
     var top = atol(opt(args, "--top", "10"), 10) if flag(args, "--top") else (20 if run else 0)
     if flag(args, "--json"):
         diff_json(a, b, top)
@@ -214,6 +216,7 @@ def budget_main(args: List[String]) raises:
         print("usage: wavewait budget FILE DIR")
         exit(1)
     var an = analyze(args[3], 0)
+    refuse(an, args)
     var broken = 0
     for raw in open(args[2], "r").read().split("\n"):
         var line = String(raw.split("#")[0].strip())
@@ -301,6 +304,7 @@ def main() raises:
 
 def emit(ref an: Analysis, args: List[String], app: Bool) raises:
     """The output the flags ask for, from one analysed capture (a capture dir or one app dispatch)."""
+    refuse(an, args)
     var top = 10
     if flag(args, "--top"):
         top = atol(opt(args, "--top", "10"), 10)

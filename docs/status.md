@@ -29,3 +29,7 @@
   `s_waitcnt` rows after `ds_store_b128` (2.4 cycles per hit on the matmul, issues and hits exact).
 - 2026-10-30 (TRELLIS.2): one mesh traced end to end (`tools/comfy-trace.sh`, `tools/comfy_join.py`, `wavewait rank --stages`, busy as a union).
   120.5 s bare, GPU busy 51.4 s, samplers 33 %, mesh post-processing 53 %. A GPU reset came during the server preflight, cause not proven.
+- 2026-11-02: a walk with mismatches now exits 3 (table, diff, budget, app); `--allow-mism` shows it. A desync once gave a false "issue wait" on mojo-baro.
+- 2026-11-02: a dispatch whose code.json has rows but no code object id now gets the object holding those rows with an aligned walk, not the next free one. Several fits print `(1ofN)`. Mojo-baro att-z1 dispatch 225: rmsnorm 96493 cycles became gemv_kq 1105904; audit 72 of 72 on 32 runs.
+- 2026-11-02: forked parallel walk dropped: 5.27 s vs 5.25 s serial on att-z1, one mega dispatch of 33 MB holds 4 s of the 5.3 s. Speed work belongs inside the walk. `check.sh` must run under pixi: bare `mojo` here is a 1.3 nightly.
+- 2026-11-02: `tools/torch-e2e.sh` passed on torch 2.13.0+rocm7.2. The matmul's `s_waitcnt` gap is a split of cycles between a `ds_store` and what follows; totals stay within 0.12 %. AMD gives `ds_store_b128` 5 cycles and `ds_store_b32` about 1 more than wavewait. Holding one cycle per data dword moved the wait only from 15952 to 14586 of AMD's 9659, and it was dropped. Known limit.

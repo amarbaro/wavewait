@@ -9,7 +9,7 @@ ww="$here/build/wavewait"
 tmp=$(mktemp -d); trap 'rm -rf "$tmp"' EXIT
 bad=0
 for run in "$@"; do
-  app=$("$ww" app "$run" 2>/dev/null) || { echo "FAIL audit: $run: wavewait app exit $?"; bad=1; continue; }
+  app=$("$ww" app "$run" --allow-mism 2>/dev/null) || { echo "FAIL audit: $run: wavewait app exit $?"; bad=1; continue; }
   while read -r kernel cycles n; do
     [ "$cycles" -gt 0 ] || continue
     old=-
@@ -17,7 +17,7 @@ for run in "$@"; do
     code=$(ls "$run"/ui_output_*_dispatch_"$n"/code.json 2>/dev/null | head -1)
     verdict="no code.json"
     if [ -n "$code" ]; then
-      "$ww" app "$run" --dispatch "$n" --json > "$tmp/w.json"
+      "$ww" app "$run" --allow-mism --dispatch "$n" --json > "$tmp/w.json"
       verdict=$(python3 "$here/tools/amd_oracle.py" "$tmp/w.json" "$code" 2>&1 | tr '\n' ' ') && verdict="ok $verdict" || { verdict="FAIL $verdict"; bad=1; }
     fi
     echo "$run dispatch $n $kernel new $cycles old $old $verdict"

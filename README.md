@@ -4,6 +4,8 @@ Cycle-level stall profile of any gfx1100 kernel (hipcc, Mojo, hand asm) from a r
 on the 7900 XTX, captured through rocprofv3 ATT (any HIP program) or tinygrad's KFD runtime (one workgroup).
 Shows, per instruction, how many cycles each wave waited before it issued.
 
+`tools/doctor.sh` says what this machine still needs to capture, with the fix.
+
 ## Use: rocprofv3 ATT
 
 ROCm's thread trace writes raw RDNA3 SQTT for any HIP program as it is (no ELF swap, any grid,
@@ -26,6 +28,8 @@ at 1 GB rocprofv3 fails to create the ATT packet and then deadlocks in its signa
 Checked: the saxpy table has the same 28 instructions in the same order as the tinygrad capture
 (`fixtures/saxpy_cu`), 8 waves per instruction instead of 4 (two workgroups on CU 3). A single-workgroup
 launch traces nothing: it runs on whichever CU the dispatcher picks.
+
+A walk with `mism` > 0 prints `FAIL walk` and exits 3: its causes look valid and are not (`--allow-mism` shows them, with `WARN`).
 
 ## Capture through tinygrad: one workgroup
 

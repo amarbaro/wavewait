@@ -13,6 +13,7 @@ struct Dispatch(Copyable):
     var key: String  # the "agent_index" key of the dispatch
     var objfile: String  # its code object ("" when the capture names none)
     var name: String  # the kernel name
+    var rows: List[Tuple[String, Int]]  # code.json rows when it names no code object
     var entry: Int  # the kernel's first pc in its code object, -1 when the capture names none
     var atts: String  # its raw SQTT files, one path per line
     var simd: Int  # the SIMD AMD's decoder found the waves on (filenames.json), -1 when unknown
@@ -22,6 +23,7 @@ struct Dispatch(Copyable):
         self.key = ""
         self.objfile = ""
         self.name = ""
+        self.rows = List[Tuple[String, Int]]()
         self.entry = -1
         self.atts = ""
         self.simd = -1
@@ -170,6 +172,8 @@ def dispatches(rundir: String) raises -> List[Dispatch]:
             if cid != 0 and cid in objs:
                 d.objfile = objs[cid]
                 claimed[cid] = True
+            elif cid == 0:
+                d.rows = code_rows(dirpath + "/code.json")
         d.atts = atts.get(key, "")
         if dirpath != "" and exists(dirpath + "/filenames.json"):  # "wave_filenames":{"<se>":{"<simd>":{...
             var t = open(dirpath + "/filenames.json", "r").read()
@@ -187,6 +191,9 @@ def dispatches(rundir: String) raises -> List[Dispatch]:
                 d.starts.append(atol(t[byte=sl + 3 : u]) << 40 | atol(t[byte=c + 1 : c2]))
                 sl = t.find("_sl", c2)
         ds.append(d^)
+    for i in range(len(ds)):
+        if len(ds[i].rows):
+            resolve(ds[i], objs, claimed)
     # the code objects no dispatch claimed belong to the dispatches whose capture has no code
     # (the runtime's own kernels): hand them out in dispatch order
     var free = List[Int]()
@@ -196,10 +203,77 @@ def dispatches(rundir: String) raises -> List[Dispatch]:
     sort(free)
     var k = 0
     for i in range(len(ds)):
-        if ds[i].objfile == "" and k < len(free):
+        if ds[i].objfile == "" and not len(ds[i].rows) and k < len(free):
             ds[i].objfile = objs[free[k]]
             k += 1
     return ds^
+
+
+def code_rows(path: String) raises -> List[Tuple[String, Int]]:
+    """The instruction rows of a code.json with no code object id: (text, vaddr). Empty when it has an id or a label."""
+    var rows = List[Tuple[String, Int]]()
+    var text = open(path, "r").read()
+    var i = text.find("\"code\":")
+    if i < 0:
+        return rows^
+    var at = text.find("[", i)
+    if at < 0 or String(String(text[byte=i + 7:at]).strip()).byte_length() != 0:
+        return rows^
+    var end = text.find("]]", at)  # the array's close; a row starts with a quote, the "[" of s[0:1] does not
+    at = text.find("[\"", at + 1)
+    while at >= 0 and at < end:
+        var f = json_fields(text, at)
+        if len(f) < 6 or atol(String(String(f[4]).strip()), 10) != 0 or String(String(f[0]).strip()).startswith("\"; "):
+            return List[Tuple[String, Int]]()
+        var q = String(String(f[0]).strip())
+        rows.append((String(q[byte=1:q.byte_length() - 1]), atol(String(String(f[5]).strip()), 10)))
+        at = text.find("[\"", at + 1)
+    return rows^
+
+
+def holds(ref pm: Pcmap, ref rows: List[Tuple[String, Int]]) raises -> Bool:
+    """The rows sit in this object at the same page offsets, with the same text."""
+    for pc in pm.text.keys():
+        if (pc ^ rows[0][1]) & 4095:
+            continue
+        var hit = True
+        for r in rows:
+            var at = pc + r[1] - rows[0][1]
+            if at not in pm.text or pm.text[at] != r[0]:
+                hit = False
+                break
+        if hit:
+            return True
+    return False
+
+
+def resolve(mut d: Dispatch, ref objs: Dict[Int, String], mut claimed: Dict[Int, Bool]) raises:
+    """A dispatch whose code.json has rows but no object id: the object holding those rows whose walk stays aligned.
+    Several left are the same code here, so the name says so instead of guessing."""
+    var fits = List[Int]()
+    for id in sorted_keys(objs):
+        d.objfile = objs[id]
+        var pm = pcmap_of(d.objfile)
+        if pm.first < 0 or not holds(pm, d.rows):
+            continue
+        var atts = d.atts
+        var an = analyze_dispatch(d, atts)
+        if an.waves and not an.mismatches:
+            fits.append(id)
+    d.objfile = ""
+    if len(fits):
+        d.objfile = objs[fits[0]]
+        claimed[fits[0]] = True
+        if len(fits) > 1:
+            d.name = pcmap_of(d.objfile).symbol + "(1of" + String(len(fits)) + ")"
+
+
+def sorted_keys(ref objs: Dict[Int, String]) -> List[Int]:
+    var ks = List[Int]()
+    for id in objs.keys():
+        ks.append(id)
+    sort(ks)
+    return ks^
 
 
 def analyze_dispatch(ref d: Dispatch, atts: String) raises -> Analysis:
@@ -274,6 +348,15 @@ def app_pick(rundir: String, want_n: Int, want_k: String, tl_cap: Int, want_line
     return an^
 
 
+def refuse(ref an: Analysis, args: List[String]):
+    """A desynced walk prints plausible, wrong causes: no result from it unless --allow-mism asks for one."""
+    if an.mismatches and "--allow-mism" not in args:
+        print("FAIL walk:", an.mismatches, "packets matched no instruction in", an.dir + ": the numbers are not trusted (--allow-mism shows them)")
+        if an.first_mismatch != "":
+            print("FAIL first: " + an.first_mismatch)
+        exit(3)
+
+
 def app_main(args: List[String]) raises:
     """One summary row per dispatch of a rocprofv3 --att run dir (wavewait app RUNDIR)."""
     if len(args) < 3:
@@ -286,11 +369,16 @@ def app_main(args: List[String]) raises:
         exit(1)
     print(lpad("kernel", 32) + pad("cycles", 9) + pad("waves", 7) + "  top cause" + "        open  mism  dispatch")
     var total = 0
+    var bad = 0
     for d in ds:
         var an = analyze_dispatch(d, d.atts)
         total += an.grand
+        bad += 1 if an.mismatches else 0
         var name = an.dir if an.dir != "" else "?"
         var tc = top_cause(an)
         print(lpad(name, 32) + pad(String(an.grand), 9) + pad(String(an.waves), 7) + "  " + tc + " " * max(1, 16 - tc.byte_length()) + pad(String(an.open_waves), 4) + pad(String(an.mismatches), 6) + "  " + String(dispatch_n(d.key)))
     print("")
     print(String(len(ds)), "dispatches,", String(total), "cycles")
+    if bad and "--allow-mism" not in args:
+        print("FAIL walk:", bad, "dispatches with mism > 0: their rows are not trusted (--allow-mism accepts them)")
+        exit(3)

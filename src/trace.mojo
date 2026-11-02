@@ -158,45 +158,49 @@ struct Table(Movable):
     """Per-pc cycle totals of one capture: as issued (total/peak) and with the waits charged (ctotal/cpeak)."""
 
     var order: List[Int]  # first-seen order, the tie order of the Python table
-    var total: Dict[Int, Int]
-    var count: Dict[Int, Int]
-    var peak: Dict[Int, Int]
-    var ctotal: Dict[Int, Int]
-    var cpeak: Dict[Int, Int]
-    var exposed: Dict[Int, Int]  # SIMD idle cycles charged here, in XL units
+    var first: Int
+    var total: List[Int]  # all six flat by (pc - first) // 4: the walk adds to them once per issue
+    var count: List[Int]
+    var peak: List[Int]
+    var ctotal: List[Int]
+    var cpeak: List[Int]
+    var exposed: List[Int]  # SIMD idle cycles charged here, in XL units
     var bmin: Dict[Int, Int]  # taken branch pc -> min / max times one ended wave took it (not-taken: op 4, not counted)
     var bmax: Dict[Int, Int]
 
-    def __init__(out self):
+    def __init__(out self, first: Int, n: Int):
         self.order = List[Int]()
-        self.total = Dict[Int, Int]()
-        self.count = Dict[Int, Int]()
-        self.peak = Dict[Int, Int]()
-        self.ctotal = Dict[Int, Int]()
-        self.cpeak = Dict[Int, Int]()
-        self.exposed = Dict[Int, Int]()
+        self.first = first
+        self.total = List[Int](length=n, fill=0)
+        self.count = List[Int](length=n, fill=0)
+        self.peak = List[Int](length=n, fill=0)
+        self.ctotal = List[Int](length=n, fill=0)
+        self.cpeak = List[Int](length=n, fill=0)
+        self.exposed = List[Int](length=n, fill=0)
         self.bmin = Dict[Int, Int]()
         self.bmax = Dict[Int, Int]()
 
-    def add(mut self, a: Int, d: Int, c: Int) raises:
-        if a not in self.total:
-            self.order.append(a)
-            self.total[a] = 0
-            self.count[a] = 0
-            self.peak[a] = d
-            self.ctotal[a] = 0
-            self.cpeak[a] = c
-            self.exposed[a] = 0
-        self.total[a] = self.total[a] + d
-        self.count[a] = self.count[a] + 1
-        self.peak[a] = max(self.peak[a], d)
-        self.ctotal[a] = self.ctotal[a] + c
-        self.cpeak[a] = max(self.cpeak[a], c)
+    def i(self, a: Int) -> Int:
+        return (a - self.first) >> 2
 
-    def charge(mut self, a: Int, extra: Int, own: Int) raises:
+    def add(mut self, a: Int, d: Int, c: Int):
+        var i = self.i(a)
+        if self.count[i] == 0:
+            self.order.append(a)
+            self.peak[i] = d
+            self.cpeak[i] = c
+        self.total[i] += d
+        self.count[i] += 1
+        self.peak[i] = max(self.peak[i], d)
+        self.ctotal[i] += c
+        self.cpeak[i] = max(self.cpeak[i], c)
+
+    def charge(mut self, a: Int, extra: Int, own: Int):
         """Add held cycles to the wait's sample already counted (own = what the wait itself took to issue)."""
-        self.ctotal[a] = self.ctotal[a] + extra
-        self.cpeak[a] = max(self.cpeak[a], own + extra)
+        var i = self.i(a)
+        self.ctotal[i] += extra
+        self.cpeak[i] = max(self.cpeak[i], own + extra)
+
 
 def pclass(kind: Int, op: Int) -> String:
     """Instruction class a packet can belong to (the CLASS table of the retired Python analyzer)."""
@@ -242,6 +246,34 @@ def fits(c: String, t: String) -> Bool:
     if c == "g":
         return starts_any(t, mem)
     return starts_any(t, ["s_waitcnt", "s_clause", "s_nop", "s_sleep", "s_endpgm", "s_set", "s_inst", "s_icache", "s_version"]) or starts_any(t, mem)
+
+
+comptime CLASSES = "vskbrmgi"  # the classes pclass returns; a pc's mask holds one bit each, so the walk never compares text
+comptime HAS = 1 << 14
+comptime DELAY = 1 << 15
+
+
+@always_inline
+def at(ref m: List[UInt16], first: Int, a: Int) -> Int:
+    """The mask of pc a, 0 off the map."""
+    var i = (a - first) >> 2
+    return Int(m.unsafe_ptr()[i]) if 0 <= i and i < len(m) and a & 3 == 0 else 0
+
+
+def masks(ref pm: Pcmap) raises -> List[UInt16]:
+    """Flat by (pc - first) // 4: which packet classes fit the instruction there, built once per code map."""
+    var top = pm.first
+    var lo = pm.first
+    for a in pm.text.keys():
+        top = max(top, a)
+    var m = List[UInt16](length=(top - lo) // 4 + 1, fill=0)
+    for it in pm.text.items():
+        var v = HAS | (DELAY if it.value.startswith("s_delay_alu") else 0)
+        for i in range(8):
+            if fits(String(CLASSES[byte=i]), it.value):
+                v |= 1 << i
+        m[(it.key - lo) // 4] = UInt16(v)
+    return m^
 
 
 def lit(t: String) raises -> Int:
@@ -390,7 +422,9 @@ def analyze_paths(paths: List[String], pm: Pcmap, label: String, tl_cap: Int, co
     of the dispatch (slot << 40 | start time), the only ones walked when given; entry: the kernel's first pc (the lowest pc
     of the code object when unknown or not in the map)."""
     var start_pc = entry if entry in pm.text else pm.first
-    var tab = Table()
+    var fit = masks(pm)
+    var f0 = pm.first
+    var tab = Table(f0, len(fit))
     var start = -1  # pc of the first traced instruction
     var mismatches = 0
     var an = Analysis()
@@ -430,10 +464,11 @@ def analyze_paths(paths: List[String], pm: Pcmap, label: String, tl_cap: Int, co
         # smooth kernel walked SIMD 1 for SIMD 3), else the search's, the lowest when still ambiguous
         var tu = TRACED_CU * 4 + (simd if simd >= 0 else Int(count_trailing_zeros(cand)))
         p.rewind()
-        var pc = Dict[Int, Int]()
-        var last = Dict[Int, Int]()
-        var prev = Dict[Int, Int]()  # pc of the wave's previous traced instruction
-        var prev_d = Dict[Int, Int]()  # and the delta it issued with
+        var pc = List[Int](length=32, fill=-1)  # by wave slot, -1: no wave walked there
+        var alive_n = 0
+        var last = List[Int](length=32, fill=0)
+        var prev = List[Int](length=32, fill=-1)  # pc of the wave's previous traced instruction
+        var prev_d = List[Int](length=32, fill=0)  # and the delta it issued with
         var regs = Dict[Int, Int]()  # wave << 8 | sgpr -> the pc it holds: no packet names the target of a call or an s_setpc
         # exposed cycles: every cycle the SIMD issued nothing is shared by the k waves alive then; g is that
         # share summed over time (XL units), a wave takes g - g_last when it issues, charged where the cycles go
@@ -452,7 +487,7 @@ def analyze_paths(paths: List[String], pm: Pcmap, label: String, tl_cap: Int, co
             var w = p.wave()
             var traced = p.kind >= INST or ((p.kind == WAVESTART or p.kind == WAVEEND) and p.unit() == tu)
             if traced and p.time != t_prev:
-                var k = len(pc)
+                var k = alive_n
                 if t_prev >= 0 and k > 0:
                     var idle = max(0, p.time - t_prev - (1 if issued else 0))
                     idle_n += idle
@@ -464,6 +499,7 @@ def analyze_paths(paths: List[String], pm: Pcmap, label: String, tl_cap: Int, co
                 issued = False
             if p.kind == WAVESTART and p.unit() == tu and (only_w < 0 or w == only_w) and (not starts or (w << 40 | p.time) in keep):
                 g_last[w] = g
+                alive_n += 1 if pc[w] < 0 else 0
                 pc[w] = start_pc
                 last[w] = p.time
                 prev[w] = -1
@@ -481,32 +517,35 @@ def analyze_paths(paths: List[String], pm: Pcmap, label: String, tl_cap: Int, co
                 while tmask:
                     var w = count_trailing_zeros(tmask)
                     tmask &= tmask - 1
-                    if w not in pc or lost >> w & 1:
+                    if pc[w] < 0 or lost >> w & 1:
                         continue
                     var opv = bits(p.reg, 19, 13)
                     if p.kind == INST and opv >= 0x50 and opv <= 0x66:
                         continue  # OTHER_ ops: memory ops of the other SIMD
                     var a = pc[w]
-                    while a in pm.text and pm.text[a].startswith("s_delay_alu"):  # never emits a packet
+                    while at(fit, f0, a) & DELAY:  # never emits a packet
                         a += pm.size[a]
-                    if a not in pm.text:  # walked off the code map (wrong code object): drop the wave
+                    if not at(fit, f0, a) & HAS:  # walked off the code map (wrong code object): drop the wave
                         mismatches += 1
-                        _ = pc.pop(w)
+                        pc[w] = -1
+                        alive_n -= 1
                         continue
                     var c = pclass(p.kind, opv)
+                    var cb = 1 << String(CLASSES).find(c)
                     var bb = a
                     var found = False
                     for _ in range(3):  # skip instructions this packet cannot belong to (untraced)
-                        if bb not in pm.text:
+                        var bm = at(fit, f0, bb)
+                        if not bm & HAS:
                             break
-                        if fits(c, pm.text[bb]):
+                        if bm & cb:
                             a = bb
                             found = True
                             break
                         bb += pm.size[bb]
-                        while bb in pm.text and pm.text[bb].startswith("s_delay_alu"):
+                        while at(fit, f0, bb) & DELAY:
                             bb += pm.size[bb]
-                    if not found and not fits(c, pm.text[a]):
+                    if not found and not at(fit, f0, a) & cb:
                         mismatches += 1
                         if an.first_mismatch == "":
                             an.first_mismatch = "wave " + String(w) + " pc " + hex(a) + " packet class '" + c + "' op " + hex(opv) + " at instruction: " + pm.text[a]
@@ -514,7 +553,8 @@ def analyze_paths(paths: List[String], pm: Pcmap, label: String, tl_cap: Int, co
                         continue
                     if pm.text[a].startswith("s_code_end"):  # packet after s_endpgm (late immediate, slot reuse): drop the wave
                         mismatches += 1
-                        _ = pc.pop(w)
+                        pc[w] = -1
+                        alive_n -= 1
                         continue
                     if w == dump_w:
                         print("PKT t=" + String(p.time) + " kind " + String(p.kind) + " op " + hex(opv) + " class " + c + (" ok " if found else " MISS ") + hex(a) + " " + pm.text[a])
@@ -531,7 +571,7 @@ def analyze_paths(paths: List[String], pm: Pcmap, label: String, tl_cap: Int, co
                     var x = g - g_last[w]
                     g_last[w] = g
                     var xa = prev[w] if ch < d else a
-                    tab.exposed[xa] = tab.exposed[xa] + x
+                    tab.exposed[tab.i(xa)] += x
                     issued = True
                     var lane = tl_lane.get(w, -1)
                     if lane >= 0:
@@ -564,16 +604,17 @@ def analyze_paths(paths: List[String], pm: Pcmap, label: String, tl_cap: Int, co
                         pc[w] = regs[rkey]
                     else:
                         pc[w] = a + pm.size[a]
-            elif p.kind == WAVEEND and p.unit() == tu and w in pc:
+            elif p.kind == WAVEEND and p.unit() == tu and pc[w] >= 0:
                 an.xtail += g - g_last[w]  # idle after its last traced issue (s_endpgm is never traced)
                 ended += 1
                 for b in tab.bmin.keys():  # wave-level divergence: did this wave take each branch as often as the others
                     var v = bcount.pop(b << 5 | w, 0)
                     tab.bmin[b] = v if tab.bmin[b] < 0 else min(tab.bmin[b], v)
                     tab.bmax[b] = max(tab.bmax[b], v)
-                _ = pc.pop(w)
+                pc[w] = -1
+                alive_n -= 1
                 lost &= ~(1 << w)
-        an.open_waves += len(pc)
+        an.open_waves += alive_n
         an.idle += idle_n
         an.occ += occ
         an.span += span
@@ -585,20 +626,20 @@ def analyze_paths(paths: List[String], pm: Pcmap, label: String, tl_cap: Int, co
         return an^
     for a in tab.order:
         var r = Row(a, pm.size[a], pm.text[a])
-        r.waves = tab.count[a]
-        r.sum = tab.total[a]
-        r.mx = tab.peak[a]
-        r.csum = tab.ctotal[a]
-        r.cmx = tab.cpeak[a]
-        r.xsum = tab.exposed[a]
+        r.waves = tab.count[tab.i(a)]
+        r.sum = tab.total[tab.i(a)]
+        r.mx = tab.peak[tab.i(a)]
+        r.csum = tab.ctotal[tab.i(a)]
+        r.cmx = tab.cpeak[tab.i(a)]
+        r.xsum = tab.exposed[tab.i(a)]
         r.bmin = tab.bmin.get(a, -1)
         r.bmax = tab.bmax.get(a, -1)
         an.xgrand += r.xsum
-        r.cause = cause(r.text, tab.ctotal[a] * 10 // tab.count[a], a == start, a, pm.size[a])
+        r.cause = cause(r.text, tab.ctotal[tab.i(a)] * 10 // tab.count[tab.i(a)], a == start, a, pm.size[a])
         an.rows.append(r)
         an.idx[a] = len(an.rows) - 1
-        an.by_cause[r.cause] = an.by_cause.get(r.cause, 0) + tab.ctotal[a]
-        an.grand += tab.ctotal[a]
+        an.by_cause[r.cause] = an.by_cause.get(r.cause, 0) + tab.ctotal[tab.i(a)]
+        an.grand += tab.ctotal[tab.i(a)]
     an.mismatches = mismatches
     # the DWARF source positions, when the caller wants them and the capture ships the code
     # object it was built from (llvm-dwarfdump is a child process: it costs its own memory)
