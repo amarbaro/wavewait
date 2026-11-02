@@ -363,7 +363,7 @@ def pcmap_of(codeobj: String) raises -> Pcmap:
                     pm.symbol = String(String(line[byte=open + 1:close]))
             continue
         var text = String(line[byte=0:cut].strip())
-        var tail = String(line[byte=cut + 2:].strip())  # "000000001900: BF850002"
+        var tail = String(String(line[byte=cut + 2:]).lstrip("/ ").strip())  # "000000001900: BF850002"
         var colon = tail.find(":")
         if colon < 0:
             continue
