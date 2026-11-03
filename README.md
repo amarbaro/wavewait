@@ -1,7 +1,7 @@
 # wavewait
 
 <!-- badges -->
-[![check](https://github.com/amarbaro/wavewait/actions/workflows/check.yml/badge.svg?branch=main)](https://github.com/amarbaro/wavewait/actions/workflows/check.yml) [![latest release](https://img.shields.io/github/v/release/amarbaro/wavewait)](https://github.com/amarbaro/wavewait/releases/latest) [![license](https://img.shields.io/github/license/amarbaro/wavewait)](https://github.com/amarbaro/wavewait/blob/main/LICENSE)
+[![check](https://github.com/amarbaro/wavewait/actions/workflows/check.yml/badge.svg?branch=main)](https://github.com/amarbaro/wavewait/actions/workflows/check.yml) [![latest release](https://img.shields.io/github/v/release/amarbaro/wavewait)](https://github.com/amarbaro/wavewait/releases/latest) [![license](https://img.shields.io/badge/license-PolyForm_Noncommercial_1.0.0-blue)](https://github.com/amarbaro/wavewait/blob/main/LICENSE.md)
 <!-- /badges -->
 
 Cycle-level stall profile of any gfx1100 kernel (hipcc, Mojo, hand asm) from a real SQTT thread trace
