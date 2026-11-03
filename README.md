@@ -1,5 +1,9 @@
 # wavewait
 
+<!-- badges -->
+[![check](https://github.com/amarbaro/wavewait/actions/workflows/check.yml/badge.svg?branch=main)](https://github.com/amarbaro/wavewait/actions/workflows/check.yml) [![latest release](https://img.shields.io/github/v/release/amarbaro/wavewait)](https://github.com/amarbaro/wavewait/releases/latest) [![license](https://img.shields.io/github/license/amarbaro/wavewait)](https://github.com/amarbaro/wavewait/blob/main/LICENSE)
+<!-- /badges -->
+
 Cycle-level stall profile of any gfx1100 kernel (hipcc, Mojo, hand asm) from a real SQTT thread trace
 on the 7900 XTX, captured through rocprofv3 ATT (any HIP program) or tinygrad's KFD runtime (one workgroup).
 Shows, per instruction, how many cycles each wave waited before it issued.
